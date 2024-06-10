@@ -82,6 +82,17 @@ lazy val `stream-loader-clickhouse` = project
     )
   )
 
+lazy val `stream-loader-gcp` = project
+  .in(file("stream-loader-gcp"))
+  .dependsOn(`stream-loader-core` % "compile->compile;test->test")
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.google.cloud" % "google-cloud-bigquery"        % "2.40.2",
+      "com.google.cloud" % "google-cloud-bigquerystorage" % "3.5.2"
+    )
+  )
+
 lazy val `stream-loader-hadoop` = project
   .in(file("stream-loader-hadoop"))
   .dependsOn(`stream-loader-core` % "compile->compile;test->test")
@@ -147,6 +158,7 @@ val IntegrationTest = config("it").extend(Test)
 lazy val `stream-loader-tests` = project
   .in(file("stream-loader-tests"))
   .dependsOn(`stream-loader-clickhouse`)
+  .dependsOn(`stream-loader-gcp`)
   .dependsOn(`stream-loader-hadoop`)
   .dependsOn(`stream-loader-iceberg`)
   .dependsOn(`stream-loader-s3`)
@@ -160,6 +172,7 @@ lazy val `stream-loader-tests` = project
     libraryDependencies ++= Seq(
       "com.typesafe"                     % "config"                           % "1.4.3",
       "ch.qos.logback"                   % "logback-classic"                  % "1.5.6",
+      "org.slf4j"                        % "jul-to-slf4j"                     % "2.0.13",
       "com.zaxxer"                       % "HikariCP"                         % "5.1.0",
       "org.apache.iceberg"               % "iceberg-parquet"                  % icebergVersion,
       "com.vertica.jdbc"                 % "vertica-jdbc"                     % verticaVersion,
@@ -333,6 +346,7 @@ lazy val `stream-loader` = project
   .aggregate(
     `stream-loader-core`,
     `stream-loader-clickhouse`,
+    `stream-loader-gcp`,
     `stream-loader-hadoop`,
     `stream-loader-iceberg`,
     `stream-loader-s3`,
