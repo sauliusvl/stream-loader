@@ -10,7 +10,7 @@ import java.time.{LocalDateTime, ZoneOffset}
 import java.util.UUID
 import scala.reflect.runtime.universe._
 
-class AvroProtoConverter[P <: Product: TypeTag] {
+class ProtoConverter[P <: Product: TypeTag] {
   private val tpe = typeOf[P]
   private val tpeName = tpe.toString.split('.').last
 

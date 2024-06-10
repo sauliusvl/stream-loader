@@ -9,39 +9,31 @@
 package com.adform.streamloader.storage
 
 import com.adform.streamloader.fixtures._
-import com.adform.streamloader.model.{ExampleMessage, StreamPosition, StringMessage, Timestamp}
-import com.adform.streamloader.s3.S3FileStorage
-import com.adform.streamloader.sink.file.{FilePathFormatter, TimePartitioningFilePathFormatter}
+import com.adform.streamloader.model.{ExampleMessage, StreamPosition}
+import com.adform.streamloader.util.UuidExtensions
 import com.adform.streamloader.{BuildInfo, Loader}
-import com.google.cloud.bigquery.{
-  BigQuery,
-  Field,
-  Schema,
-  StandardSQLTypeName,
-  StandardTableDefinition,
-  TableId,
-  TableInfo
-}
+import com.google.cloud.bigquery._
+import org.apache.kafka.common.TopicPartition
 import org.mandas.docker.client.DockerClient
 import org.mandas.docker.client.messages.{ContainerConfig, HostConfig}
-import org.apache.kafka.common.TopicPartition
 import org.scalacheck.Arbitrary
-import software.amazon.awssdk.core.ResponseInputStream
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model._
-import software.amazon.awssdk.utils.IoUtils
 
-import java.time.LocalDate
+import java.time.{LocalDateTime, ZoneId}
 import java.util.UUID
 import scala.jdk.CollectionConverters._
+
+case class BigQueryLoaderConfig(project: String, dataset: String, table: String) {
+  def tableId: TableId = TableId.of(project, dataset, table)
+  def tableSqlName: String = s"`$project`.`$dataset`.`$table`"
+}
 
 case class BigQueryStorageBackend(
     docker: DockerClient,
     dockerNetwork: DockerNetwork,
     kafkaContainer: ContainerWithEndpoint,
-    loader: Loader,
     bigQuery: BigQuery,
-    table: String
+    loader: Loader,
+    loaderConfig: BigQueryLoaderConfig
 ) extends StorageBackend[ExampleMessage] {
 
   override def arbMessage: Arbitrary[ExampleMessage] = ExampleMessage.arbMessage
@@ -57,12 +49,15 @@ case class BigQueryStorageBackend(
       Field.newBuilder("childIds", StandardSQLTypeName.INT64).setMode(Field.Mode.REPEATED).build(),
       Field.newBuilder("parentId", StandardSQLTypeName.INT64).setMode(Field.Mode.NULLABLE).build(),
       Field.newBuilder("transactionId", StandardSQLTypeName.BYTES).setMode(Field.Mode.REQUIRED).build(),
-      Field.newBuilder("moneySpent", StandardSQLTypeName.BYTES).setMode(Field.Mode.REQUIRED).build()
+      Field
+        .newBuilder("moneySpent", StandardSQLTypeName.NUMERIC)
+        .setMode(Field.Mode.REQUIRED)
+        .setScale(ExampleMessage.SCALE_PRECISION.scale)
+        .setPrecision(ExampleMessage.SCALE_PRECISION.precision)
+        .build()
     )
 
-    val tableIdObj = TableId.of("dv-grf-plyg-sb", "not_used", "example_test")
-    val tableInfo = TableInfo.newBuilder(tableIdObj, StandardTableDefinition.of(schema)).build()
-
+    val tableInfo = TableInfo.newBuilder(loaderConfig.tableId, StandardTableDefinition.of(schema)).build()
     bigQuery.create(tableInfo)
   }
 
@@ -78,6 +73,12 @@ case class BigQueryStorageBackend(
         HostConfig
           .builder()
           .networkMode(dockerNetwork.id)
+          .binds(
+            HostConfig.Bind.builder()
+              .from("/home/saulius/.config/gcloud/application_default_credentials.json")
+              .to("/root/.config/gcloud/application_default_credentials.json")
+              .build()
+          )
           .build()
       )
       .env(
@@ -86,10 +87,9 @@ case class BigQueryStorageBackend(
         s"KAFKA_BROKERS=${kafkaContainer.endpoint}",
         s"KAFKA_TOPIC=$topic",
         s"KAFKA_CONSUMER_GROUP=$consumerGroup",
-//        s"S3_ENDPOINT=http://${s3Container.ip}:${s3Container.port}",
-//        s"S3_ACCESS_KEY=${s3Config.accessKey}",
-//        s"S3_SECRET_KEY=${s3Config.secretKey}",
-//        s"S3_BUCKET=${s3Config.bucket}",
+        s"BIGQUERY_PROJECT=${loaderConfig.project}",
+        s"BIGQUERY_DATASET=${loaderConfig.dataset}",
+        s"BIGQUERY_TABLE=${loaderConfig.table}",
         s"BATCH_SIZE=$batchSize"
       )
       .build()
@@ -113,10 +113,30 @@ case class BigQueryStorageBackend(
 //
 //    storage.initialize(kafkaContext)
 //    storage.committedPositions(partitions)
-    Map.empty
+    partitions.map(tp => (tp, None)).toMap
   }
 
   override def getContent: StorageContent[ExampleMessage] = {
-    StorageContent(Seq.empty, Map.empty)
+    val queryConfig = QueryJobConfiguration.newBuilder(s"select * from ${loaderConfig.tableSqlName}").build
+    val result = bigQuery.query(queryConfig)
+
+    val rows = result
+      .iterateAll()
+      .asScala
+      .map(r => {
+        ExampleMessage(
+          r.get("id").getLongValue.toInt,
+          r.get("name").getStringValue,
+          LocalDateTime.ofInstant(r.get("timestamp").getTimestampInstant, ZoneId.of("UTC")),
+          r.get("height").getDoubleValue,
+          r.get("width").getDoubleValue.toFloat,
+          r.get("isEnabled").getBooleanValue,
+          r.get("childIds").getRepeatedValue.asScala.map(_.getLongValue.toInt).toArray,
+          Option(r.get("parentId").getLongValue),
+          UuidExtensions.fromBytes(r.get("transactionId").getBytesValue),
+          r.get("moneySpent").getNumericValue
+        )
+      })
+    StorageContent(rows.toSeq, Map.empty)
   }
 }

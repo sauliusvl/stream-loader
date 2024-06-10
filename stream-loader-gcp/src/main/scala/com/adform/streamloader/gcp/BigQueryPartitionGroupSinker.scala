@@ -36,6 +36,11 @@ class BigQueryPartitionGroupSinker(
   private var i = 0L
 
   override def initialize(kafkaContext: KafkaContext): Map[TopicPartition, Option[StreamPosition]] = {
+
+    //val committed = kafkaContext.committed(groupPartitions)
+
+    //kafkaContext.commitSync()
+
     val stream = WriteStream.newBuilder
       .setType(WriteStream.Type.BUFFERED)
       .build()
@@ -46,7 +51,7 @@ class BigQueryPartitionGroupSinker(
       .build()
 
     writeStream = writeClient.createWriteStream(createWriteStreamRequest)
-
+    //writeStream.getTableSchema.
     log.info(s"Created BigQuery stream ${writeStream.getName}")
 
     streamWriter = StreamWriter
@@ -71,7 +76,9 @@ class BigQueryPartitionGroupSinker(
 //
 //    if ((i + 1) % batchSize == 0) {
 
-    val future = streamWriter.append(rows.build(), 0)
+    val future = streamWriter.append(rows.build(), i)
+    i += 1
+
     // val future = streamWriter.append(rows.build(), (i + 1) - batchSize)
 
     ApiFutures.addCallback(
@@ -82,7 +89,7 @@ class BigQueryPartitionGroupSinker(
         }
 
         override def onSuccess(result: AppendRowsResponse): Unit = {
-          println(s"Success: ${result.getAppendResult.getOffset}")
+          println(s"Success: ${result.getAppendResult.getOffset.getValue}")
 //          lock.synchronized {
 //            if (y > latest) latest = y
 //            //println(s"Overriding latest to $latest")
@@ -119,7 +126,7 @@ class BigQueryPartitionGroupSinker(
       FlushRowsRequest
         .newBuilder()
         .setWriteStream(writeStream.getName)
-        .setOffset(Int64Value.of(0)) // i - 1))
+        .setOffset(Int64Value.of(i - 1)) // i - 1))
         .build()
 
     writeClient.flushRows(flushRowsRequest)

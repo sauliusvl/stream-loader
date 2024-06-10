@@ -18,11 +18,11 @@ class BigQuerySink(
     writeClient: BigQueryWriteClient,
     tableName: TableName,
     tableSchema: ProtoSchema,
-    recordFormatter: RecordFormatter[Message],
-    partitionGrouping: TopicPartition => String
+    recordFormatter: RecordFormatter[Message]
 ) extends PartitionGroupingSink {
 
-  override def groupForPartition(topicPartition: TopicPartition): String = partitionGrouping(topicPartition)
+  override def groupForPartition(topicPartition: TopicPartition): String =
+    s"${topicPartition.topic()}-${topicPartition.partition()}"
 
   override def sinkerForPartitionGroup(groupName: String, partitions: Set[TopicPartition]): PartitionGroupSinker =
     new BigQueryPartitionGroupSinker(groupName, partitions, writeClient, tableName, tableSchema, recordFormatter)

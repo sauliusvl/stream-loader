@@ -11,8 +11,8 @@ package com.adform.streamloader
 import com.adform.streamloader.behaviors.{BasicLoaderBehaviors, KafkaRestartBehaviors, RebalanceBehaviors}
 import com.adform.streamloader.fixtures._
 import com.adform.streamloader.loaders.TestBigQueryLoader
-import com.adform.streamloader.storage.BigQueryStorageBackend
-import com.google.cloud.bigquery.{BigQuery, BigQueryOptions}
+import com.adform.streamloader.storage.{BigQueryLoaderConfig, BigQueryStorageBackend}
+import com.google.cloud.bigquery.{BigQuery, BigQueryOptions, DatasetId, DatasetInfo}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -43,9 +43,15 @@ class BigQueryIntegrationTests
   override def beforeAll(): Unit = {
     super.beforeAll()
     bigQuery = BigQueryOptions.getDefaultInstance.getService
+
+    val dataset = DatasetId.of("dv-grf-plyg-sb", "loader_tests")
+    if (!bigQuery.getDataset(dataset).exists()) {
+      bigQuery.create(DatasetInfo.newBuilder(dataset).build())
+    }
   }
 
   override def afterAll(): Unit = {
+    // bigQuery.delete(DatasetId.of("dv-grf-plyg-sb", "loader_tests"))
     super.afterAll()
   }
 
@@ -54,9 +60,9 @@ class BigQueryIntegrationTests
       docker,
       dockerNetwork,
       kafkaContainer,
-      loader,
       bigQuery,
-      testId
+      loader,
+      BigQueryLoaderConfig("dv-grf-plyg-sb", "loader_tests", testId)
     )
     backend.initialize()
     backend

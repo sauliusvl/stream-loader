@@ -20,4 +20,11 @@ object UuidExtensions {
       bb.array
     }
   }
+
+  def fromBytes(bytes: Array[Byte]): UUID = {
+    val bb = ByteBuffer.wrap(bytes)
+    val high = bb.getLong
+    val low = bb.getLong
+    new UUID(high, low)
+  }
 }

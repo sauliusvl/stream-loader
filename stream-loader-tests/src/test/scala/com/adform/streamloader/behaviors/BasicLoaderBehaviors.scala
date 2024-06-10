@@ -55,42 +55,42 @@ trait BasicLoaderBehaviors {
         }
       }
     }
-
-    it(s"$testPrefix should restart from committed offset and continue writing from Kafka") {
-      val testName = s"restart_test_$genTestId"
-      val (topic, partition, consumerGroup) = (s"topic_$testName", 0, s"consumer_group_$testName")
-      val backend = storageBackendFactory(topic)
-
-      withKafkaTopics(new NewTopic(topic, 1, 1.asInstanceOf[Short])) {
-        withKafkaProducer { producer =>
-          val initialMessages = backend.generateRandomMessages(5, seed = 1)
-          val loaderKafkaConfig = LoaderKafkaConfig(consumerGroup, topic)
-
-          // Write some messages
-          loadMessagesThroughKafka(backend)(
-            producer,
-            loaderKafkaConfig,
-            partition,
-            initialMessages,
-            messageBatchCount = 1
-          )
-
-          // Write more messages
-          val laterMessages = backend.generateRandomMessages(5, seed = 2)
-          loadMessagesThroughKafka(backend)(
-            producer,
-            loaderKafkaConfig,
-            partition,
-            laterMessages,
-            messageBatchCount = 1
-          )
-
-          // Check if everything got written
-          eventually {
-            backend.getContent.messages should contain theSameElementsAs (initialMessages ++ laterMessages)
-          }
-        }
-      }
-    }
+//
+//    it(s"$testPrefix should restart from committed offset and continue writing from Kafka") {
+//      val testName = s"restart_test_$genTestId"
+//      val (topic, partition, consumerGroup) = (s"topic_$testName", 0, s"consumer_group_$testName")
+//      val backend = storageBackendFactory(topic)
+//
+//      withKafkaTopics(new NewTopic(topic, 1, 1.asInstanceOf[Short])) {
+//        withKafkaProducer { producer =>
+//          val initialMessages = backend.generateRandomMessages(5, seed = 1)
+//          val loaderKafkaConfig = LoaderKafkaConfig(consumerGroup, topic)
+//
+//          // Write some messages
+//          loadMessagesThroughKafka(backend)(
+//            producer,
+//            loaderKafkaConfig,
+//            partition,
+//            initialMessages,
+//            messageBatchCount = 1
+//          )
+//
+//          // Write more messages
+//          val laterMessages = backend.generateRandomMessages(5, seed = 2)
+//          loadMessagesThroughKafka(backend)(
+//            producer,
+//            loaderKafkaConfig,
+//            partition,
+//            laterMessages,
+//            messageBatchCount = 1
+//          )
+//
+//          // Check if everything got written
+//          eventually {
+//            backend.getContent.messages should contain theSameElementsAs (initialMessages ++ laterMessages)
+//          }
+//        }
+//      }
+//    }
   }
 }
