@@ -14,6 +14,7 @@ import com.adform.streamloader.sink.batch.RecordFormatter
 import com.adform.streamloader.source.KafkaContext
 import com.adform.streamloader.util.{Logging, Metrics}
 import com.google.api.core.{ApiFutureCallback, ApiFutures}
+import com.google.api.gax.rpc.ApiException
 import com.google.cloud.bigquery.storage.v1._
 import com.google.common.util.concurrent.MoreExecutors
 import com.google.protobuf.{Int64Value, Message}
@@ -36,28 +37,43 @@ class BigQueryPartitionGroupSinker(
   private var i = 0L
 
   override def initialize(kafkaContext: KafkaContext): Map[TopicPartition, Option[StreamPosition]] = {
+    assert(groupPartitions.size == 1, "Sinking multiple partitions is not supported")
 
-    //val committed = kafkaContext.committed(groupPartitions)
+    val committed = kafkaContext.committed(groupPartitions)
+    val offsetMetadata = committed.head._2
 
-    //kafkaContext.commitSync()
+    val bqMetadata = offsetMetadata.map(om => BigQueryCommitMetadata.parseJson(om.metadata()))
 
-    val stream = WriteStream.newBuilder
-      .setType(WriteStream.Type.BUFFERED)
-      .build()
+    var writeStream: WriteStream = null
 
-    val createWriteStreamRequest = CreateWriteStreamRequest.newBuilder
-      .setParent(tableName.toString)
-      .setWriteStream(stream)
-      .build()
+    bqMetadata.flatMap(_.streamName).foreach(s => {
+      val streamName = WriteStreamName.of(tableName.getProject, tableName.getDataset, tableName.getTable, s)
+      try {
+        writeStream = writeClient.getWriteStream(streamName)
+      } catch {
+        case ex: ApiException => log.warn(ex)(s"Failed initializing write stream $streamName, will attempt creating a new one")
+      }
+    })
 
-    writeStream = writeClient.createWriteStream(createWriteStreamRequest)
-    //writeStream.getTableSchema.
-    log.info(s"Created BigQuery stream ${writeStream.getName}")
+    if (writeStream == null) {
+      val stream = WriteStream.newBuilder
+        .setType(WriteStream.Type.BUFFERED)
+        .build()
+
+      val createWriteStreamRequest = CreateWriteStreamRequest.newBuilder
+        .setParent(tableName.toString)
+        .setWriteStream(stream)
+        .build()
+
+      writeStream = writeClient.createWriteStream(createWriteStreamRequest)
+      log.info(s"Created BigQuery stream ${writeStream.getName}")
+    }
 
     streamWriter = StreamWriter
       .newBuilder(writeStream.getName, writeClient)
       .setWriterSchema(tableSchema)
       .build()
+
 
     Map.empty
   }
