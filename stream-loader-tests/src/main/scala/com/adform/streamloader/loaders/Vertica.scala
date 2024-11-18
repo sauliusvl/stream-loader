@@ -10,14 +10,18 @@ package com.adform.streamloader.loaders
 
 import com.adform.streamloader.model.{ExampleMessage, StreamRecord, Timestamp}
 import com.adform.streamloader.sink.Sink
-import com.adform.streamloader.sink.batch.{RecordBatchingSink, RecordFormatter}
+import com.adform.streamloader.sink.batch.v2.stream.TempFileStreamBatch
+import com.adform.streamloader.sink.batch.v2.{BatchCommitStrategy, RecordBatchingSink}
 import com.adform.streamloader.sink.encoding.macros.DataTypeEncodingAnnotation.{DecimalEncoding, MaxLength}
 import com.adform.streamloader.sink.file.Compression
-import com.adform.streamloader.sink.file.FileCommitStrategy.ReachedAnyOf
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.vertica._
-import com.adform.streamloader.vertica.file.native.NativeVerticaFileBuilder
+import com.adform.streamloader.vertica.v2.{
+  ExternalOffsetVerticaBatchStorage,
+  ExternalOffsetVerticaBatcher,
+  VerticaNativeRowBatchBuilder
+}
 import com.adform.streamloader.{Loader, StreamLoader}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
@@ -131,18 +135,18 @@ object TestExternalOffsetVerticaLoader extends BaseVerticaLoader {
     RecordBatchingSink
       .builder()
       .recordBatcher(
-        ExternalOffsetVerticaFileBatcher
-          .builder()
-          .dbDataSource(verticaDataSource)
-          .fileIdSequence(cfg.getString("vertica.file-id-sequence"))
-          .recordFormatter(recordFormatter)
-          .fileBuilderFactory(() => new NativeVerticaFileBuilder(Compression.ZSTD))
-          .fileCommitStrategy(ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records"))))
-          .verticaLoadMethod(VerticaLoadMethod.AUTO)
-          .build()
+        new ExternalOffsetVerticaBatcher(
+          verticaDataSource,
+          cfg.getString("vertica.file-id-sequence"),
+          recordFormatter,
+          () => new VerticaNativeRowBatchBuilder[TestExternalOffsetVerticaRecord](new TempFileStreamBatch(), VerticaLoadMethod.AUTO, Compression.ZSTD)
+        )
+      )
+      .batchCommitStrategy(
+        BatchCommitStrategy.ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records")))
       )
       .batchStorage(
-        ExternalOffsetVerticaFileStorage
+        ExternalOffsetVerticaBatchStorage
           .builder()
           .dbDataSource(verticaDataSource)
           .table(cfg.getString("vertica.table"))
@@ -188,48 +192,53 @@ case class TestInRowOffsetVerticaRecord(
     money_spent: BigDecimal @DecimalEncoding(18, 6)
 )
 
-object TestInRowOffsetVerticaLoader extends BaseVerticaLoader {
-
-  private val recordFormatter: RecordFormatter[TestInRowOffsetVerticaRecord] = record => {
-    val msg = ExampleMessage.parseFrom(record.consumerRecord.value())
-    Seq(
-      TestInRowOffsetVerticaRecord(
-        record.consumerRecord.topic(),
-        record.consumerRecord.partition(),
-        record.consumerRecord.offset(),
-        record.watermark,
-        msg.id,
-        msg.name,
-        msg.timestamp,
-        msg.height,
-        msg.width,
-        msg.isEnabled,
-        msg.childIds.mkString(";"),
-        msg.parentId,
-        msg.transactionId,
-        msg.moneySpent
-      )
-    )
+object TestInRowOffsetVerticaLoader extends Loader {
+  override def main(args: Array[String]): Unit = {
   }
-
-  override def sink(cfg: Config, verticaDataSource: HikariDataSource): Sink =
-    RecordBatchingSink
-      .builder()
-      .recordBatcher(
-        InRowOffsetVerticaFileRecordBatcher
-          .builder()
-          .recordFormatter(recordFormatter)
-          .fileBuilderFactory(() => new NativeVerticaFileBuilder(Compression.ZSTD))
-          .fileCommitStrategy(ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records"))))
-          .verticaLoadMethod(VerticaLoadMethod.AUTO)
-          .build()
-      )
-      .batchStorage(
-        InRowOffsetVerticaFileStorage
-          .builder()
-          .dbDataSource(verticaDataSource)
-          .table(cfg.getString("vertica.table"))
-          .build()
-      )
-      .build()
 }
+
+//object TestInRowOffsetVerticaLoader extends BaseVerticaLoader {
+//
+//  private val recordFormatter: RecordFormatter[TestInRowOffsetVerticaRecord] = record => {
+//    val msg = ExampleMessage.parseFrom(record.consumerRecord.value())
+//    Seq(
+//      TestInRowOffsetVerticaRecord(
+//        record.consumerRecord.topic(),
+//        record.consumerRecord.partition(),
+//        record.consumerRecord.offset(),
+//        record.watermark,
+//        msg.id,
+//        msg.name,
+//        msg.timestamp,
+//        msg.height,
+//        msg.width,
+//        msg.isEnabled,
+//        msg.childIds.mkString(";"),
+//        msg.parentId,
+//        msg.transactionId,
+//        msg.moneySpent
+//      )
+//    )
+//  }
+//
+//  override def sink(cfg: Config, verticaDataSource: HikariDataSource): Sink =
+//    RecordBatchingSink
+//      .builder()
+//      .recordBatcher(
+//        InRowOffsetVerticaFileRecordBatcher
+//          .builder()
+//          .recordFormatter(recordFormatter)
+//          .fileBuilderFactory(() => new NativeVerticaFileBuilder(Compression.ZSTD))
+//          .fileCommitStrategy(ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records"))))
+//          .verticaLoadMethod(VerticaLoadMethod.AUTO)
+//          .build()
+//      )
+//      .batchStorage(
+//        InRowOffsetVerticaFileStorage
+//          .builder()
+//          .dbDataSource(verticaDataSource)
+//          .table(cfg.getString("vertica.table"))
+//          .build()
+//      )
+//      .build()
+//}

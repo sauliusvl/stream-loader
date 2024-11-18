@@ -8,18 +8,18 @@
 
 package com.adform.streamloader.loaders
 
-import com.adform.streamloader.iceberg.{IcebergRecordBatchStorage, IcebergRecordBatcher}
+import com.adform.streamloader.iceberg.v2.{IcebergBatch, IcebergBatchBuilder, IcebergRecordBatchStorage, IcebergRecordOrdering, IcebergRecordPartitioner}
 import com.adform.streamloader.model.ExampleMessage
-import com.adform.streamloader.sink.batch.{RecordBatchingSink, RecordFormatter}
-import com.adform.streamloader.sink.file.FileCommitStrategy._
-import com.adform.streamloader.sink.file.MultiFileCommitStrategy
+import com.adform.streamloader.sink.batch.RecordFormatter
+import com.adform.streamloader.sink.batch.v2.BatchCommitStrategy._
+import com.adform.streamloader.sink.batch.v2.{FormattingRecordBatcher, RecordBatchingSink, SortingBatchBuilder}
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.util.UuidExtensions._
 import com.adform.streamloader.{Loader, StreamLoader}
 import com.typesafe.config.ConfigFactory
 import org.apache.hadoop.conf.Configuration
-import org.apache.iceberg.{FileFormat, TableMetadata, TableOperations}
+import org.apache.iceberg.{FileFormat, PartitionKey, TableMetadata, TableOperations}
 import org.apache.iceberg.catalog.TableIdentifier
 import org.apache.iceberg.data.{GenericRecord, Record => IcebergRecord}
 import org.apache.iceberg.hadoop.HadoopCatalog
@@ -60,6 +60,9 @@ object TestIcebergLoader extends Loader {
       Seq(icebergRecord)
     }
 
+    val recordPartitioner = new IcebergRecordPartitioner(table)
+    val sortOrder = new IcebergRecordOrdering(table)
+
     val source = KafkaSource
       .builder()
       .consumerProperties(cfg.getConfig("kafka.consumer").toProperties)
@@ -67,31 +70,39 @@ object TestIcebergLoader extends Loader {
       .topics(Seq(cfg.getString("kafka.topic")))
       .build()
 
-    val sink = RecordBatchingSink
-      .builder()
-      .recordBatcher(
-        IcebergRecordBatcher
-          .builder()
-          .recordFormatter(recordFormatter)
-          .table(table)
-          .fileFormat(FileFormat.PARQUET)
-          .fileCommitStrategy(
-            MultiFileCommitStrategy.total(ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records"))))
-          )
-          .writeProperties(
-            Map("write.parquet.compression-codec" -> "zstd")
-          )
-          .build()
-      )
-      .batchStorage(
-        IcebergRecordBatchStorage
-          .builder()
-          .table(table)
-          .commitLock(new ReentrantLock())
-          .build()
-      )
-      .batchCommitQueueSize(5)
-      .build()
+    val sink =
+      RecordBatchingSink
+        .builder()
+        .recordBatcher(
+          FormattingRecordBatcher
+            .builder()
+            .formatter(recordFormatter)
+            .partitioner(recordPartitioner)
+            .partitionBatchBuilder(pk =>
+              new SortingBatchBuilder(
+                new IcebergBatchBuilder(
+                  table,
+                  pk,
+                  FileFormat.PARQUET,
+                  Map("write.parquet.compression-codec" -> "zstd")
+                ),
+                sortOrder
+              )
+            )
+            .build()
+        )
+        .batchCommitQueueSize(5)
+        .batchCommitStrategy(
+          ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records")))
+        )
+        .batchStorage(
+          IcebergRecordBatchStorage
+            .builder()
+            .table(table)
+            .commitLock(new ReentrantLock())
+            .build()
+        )
+        .build()
 
     val loader = new StreamLoader(source, sink)
 

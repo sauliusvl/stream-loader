@@ -22,7 +22,6 @@ import org.xerial.snappy.SnappyHadoopCompatibleOutputStream
   *
   * @param recordStreamWriterFactory Factory that produces record stream writers given output streams.
   * @param compression               Compression to use.
-  *
   * @tparam R type of the records written to files being built.
   */
 class StreamFileBuilder[-R](

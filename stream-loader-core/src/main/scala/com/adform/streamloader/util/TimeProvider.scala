@@ -8,6 +8,8 @@
 
 package com.adform.streamloader.util
 
+import java.time.Instant
+
 /**
   * A current time provider, used for mocking time in tests.
   */
@@ -17,6 +19,8 @@ trait TimeProvider {
     * Gets the current unix epoch milliseconds.
     */
   def currentMillis: Long
+
+  def currentTime: Instant = Instant.ofEpochMilli(currentMillis)
 }
 
 object TimeProvider {
