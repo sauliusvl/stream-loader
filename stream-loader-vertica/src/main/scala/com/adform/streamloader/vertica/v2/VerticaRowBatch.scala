@@ -10,6 +10,7 @@ import com.adform.streamloader.vertica.file.native.{NativeVerticaRecordEncoder, 
 import java.io.InputStream
 
 trait VerticaRowBatch {
+  def inputStream: InputStream
   def copyStatement(table: String): String
 }
 

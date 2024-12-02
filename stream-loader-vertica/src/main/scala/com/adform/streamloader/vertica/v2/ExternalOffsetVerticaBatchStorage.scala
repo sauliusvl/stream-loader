@@ -12,6 +12,7 @@ import com.adform.streamloader.model.{StreamPosition, Timestamp}
 import com.adform.streamloader.sink.batch.v2.storage.InDataOffsetBatchStorage
 import com.adform.streamloader.sink.batch.v2.FormattedRecordBatch
 import com.adform.streamloader.util.Logging
+import com.vertica.jdbc.{VerticaConnection, VerticaCopyStream}
 import org.apache.kafka.common.TopicPartition
 
 import java.sql.{Connection, SQLDataException, Timestamp => SqlTimestamp}
@@ -55,7 +56,8 @@ class ExternalOffsetVerticaBatchStorage(
   startOffsetColumnName: String,
   startWatermarkColumnName: String,
   endOffsetColumnName: String,
-  endWatermarkColumnName: String
+  endWatermarkColumnName: String,
+  connectionUnwrapper: Connection => VerticaConnection = (c: Connection) => c.asInstanceOf[VerticaConnection]
 ) extends InDataOffsetBatchStorage[FormattedRecordBatch[Unit, ExternalVerticaRowBatch]]
   with Logging {
 
@@ -121,11 +123,13 @@ class ExternalOffsetVerticaBatchStorage(
           insertResult
         }
 
-        Using.resource(connection.prepareStatement(copyQuery)) { copyStatement =>
-          log.info(s"Running statement: $copyQuery")
-          val copyResult = copyStatement.executeUpdate()
-          log.info(s"Successfully committed $copyResult record(s) and updated ${inserts.sum} batch metadata record(s)")
-        }
+        log.info(s"Running statement: $copyQuery")
+        val stream = new VerticaCopyStream(connectionUnwrapper(connection), copyQuery)
+        stream.start()
+        stream.addStream(batch.inputStream)
+        stream.execute()
+        val copyResult = stream.finish()
+        log.info(s"Successfully committed $copyResult record(s) and updated ${inserts.sum} batch metadata record(s)")
 
         connection.commit()
 
@@ -152,7 +156,8 @@ object ExternalOffsetVerticaBatchStorage {
                       private val _startOffsetColumnName: String = "_start_offset",
                       private val _startWatermarkColumnName: String = "_start_watermark",
                       private val _endOffsetColumnName: String = "_end_offset",
-                      private val _endWatermarkColumnName: String = "_end_watermark"
+                      private val _endWatermarkColumnName: String = "_end_watermark",
+  private val u: Connection => VerticaConnection = null
                     ) {
 
     /**
@@ -169,6 +174,8 @@ object ExternalOffsetVerticaBatchStorage {
      * Sets the name of the table used for storing offsets.
      */
     def offsetTable(name: String): Builder = copy(_offsetTable = name)
+
+    def unwrapper(un: Connection => VerticaConnection): Builder = copy(u = un)
 
     /**
      * Sets the names of the columns in the offset table.
@@ -211,7 +218,8 @@ object ExternalOffsetVerticaBatchStorage {
         _startOffsetColumnName,
         _startWatermarkColumnName,
         _endOffsetColumnName,
-        _endWatermarkColumnName
+        _endWatermarkColumnName,
+        u
       )
     }
   }

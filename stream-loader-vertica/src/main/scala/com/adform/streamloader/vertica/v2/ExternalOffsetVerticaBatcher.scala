@@ -12,12 +12,14 @@ import com.adform.streamloader.model.StreamRecord
 import com.adform.streamloader.sink.batch.v2._
 import com.adform.streamloader.util.{Logging, TimeProvider}
 
+import java.io.InputStream
 import java.time.Instant
 import javax.sql.DataSource
 import scala.util.Using
 
 
 case class WrappedExternalVerticaRowBatch(id: Long, batch: VerticaRowBatch) extends ExternalVerticaRowBatch {
+  override def inputStream: InputStream = batch.inputStream
   override def copyStatement(table: String): String = batch.copyStatement(table)
 }
 

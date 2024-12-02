@@ -17,15 +17,14 @@ import com.adform.streamloader.sink.file.Compression
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.vertica._
-import com.adform.streamloader.vertica.v2.{
-  ExternalOffsetVerticaBatchStorage,
-  ExternalOffsetVerticaBatcher,
-  VerticaNativeRowBatchBuilder
-}
+import com.adform.streamloader.vertica.v2.{ExternalOffsetVerticaBatchStorage, ExternalOffsetVerticaBatcher, VerticaNativeRowBatchBuilder}
 import com.adform.streamloader.{Loader, StreamLoader}
 import com.typesafe.config.{Config, ConfigFactory}
+import com.vertica.jdbc.VerticaConnection
+import com.zaxxer.hikari.pool.HikariProxyConnection
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 
+import java.sql.Connection
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -151,6 +150,7 @@ object TestExternalOffsetVerticaLoader extends BaseVerticaLoader {
           .dbDataSource(verticaDataSource)
           .table(cfg.getString("vertica.table"))
           .offsetTable(cfg.getString("vertica.offset-table"))
+          .unwrapper(_.asInstanceOf[HikariProxyConnection].unwrap(classOf[VerticaConnection]))
           .build()
       )
       .build()
