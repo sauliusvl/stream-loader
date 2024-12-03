@@ -8,7 +8,7 @@
 
 package com.adform.streamloader.loaders
 
-import com.adform.streamloader.iceberg.v2.{IcebergBatch, IcebergBatchBuilder, IcebergRecordBatchStorage, IcebergRecordOrdering, IcebergRecordPartitioner}
+import com.adform.streamloader.iceberg.v2._
 import com.adform.streamloader.model.ExampleMessage
 import com.adform.streamloader.sink.batch.RecordFormatter
 import com.adform.streamloader.sink.batch.v2.BatchCommitStrategy._
@@ -19,11 +19,11 @@ import com.adform.streamloader.util.UuidExtensions._
 import com.adform.streamloader.{Loader, StreamLoader}
 import com.typesafe.config.ConfigFactory
 import org.apache.hadoop.conf.Configuration
-import org.apache.iceberg.{FileFormat, PartitionKey, TableMetadata, TableOperations}
 import org.apache.iceberg.catalog.TableIdentifier
 import org.apache.iceberg.data.{GenericRecord, Record => IcebergRecord}
 import org.apache.iceberg.hadoop.HadoopCatalog
 import org.apache.iceberg.io.{FileIO, LocationProvider}
+import org.apache.iceberg.{FileFormat, TableMetadata, TableOperations}
 
 import java.time.{Duration, ZoneOffset}
 import java.util
@@ -91,10 +91,11 @@ object TestIcebergLoader extends Loader {
             )
             .build()
         )
-        .batchCommitQueueSize(5)
         .batchCommitStrategy(
           ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records")))
+            .withSizeSampling(sampleSize = 1000)
         )
+        .batchCommitQueueSize(5)
         .batchStorage(
           IcebergRecordBatchStorage
             .builder()

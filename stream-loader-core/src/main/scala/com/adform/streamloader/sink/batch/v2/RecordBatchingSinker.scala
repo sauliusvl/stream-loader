@@ -110,6 +110,8 @@ class RecordBatchingSinker[B <: RecordBatch](
 
   private def checkAndCommitBatchIfNeeded(): Unit = {
     if (batchCommitStrategy.shouldCommit(builder)) {
+      batchCommitStrategy.preCommitBatch(builder)
+
       log.info(s"Forming batch for '$groupName' and putting it to the commit queue")
       builder.build().foreach { batch =>
         try {
