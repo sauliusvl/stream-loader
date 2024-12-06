@@ -246,6 +246,7 @@ object TestInRowOffsetVerticaLoader extends BaseVerticaLoader {
           .builder()
           .dbDataSource(verticaDataSource)
           .table(cfg.getString("vertica.table"))
+          .unwrapper(_.asInstanceOf[HikariProxyConnection].unwrap(classOf[VerticaConnection]))
           .build()
       )
       .build()

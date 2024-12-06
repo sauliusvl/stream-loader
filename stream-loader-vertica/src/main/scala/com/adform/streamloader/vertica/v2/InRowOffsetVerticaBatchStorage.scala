@@ -14,6 +14,7 @@ import com.adform.streamloader.sink.batch.v2.formatting.FormattedRecordBatch
 import com.adform.streamloader.sink.batch.v2.storage.InDataOffsetBatchStorage
 import com.adform.streamloader.util.Logging
 import com.adform.streamloader.vertica.v2.VerticaRowBatch
+import com.vertica.jdbc.{VerticaConnection, VerticaCopyStream}
 
 import javax.sql.DataSource
 import org.apache.kafka.common.TopicPartition
@@ -35,7 +36,8 @@ class InRowOffsetVerticaFileStorage(
     topicColumnName: String,
     partitionColumnName: String,
     offsetColumnName: String,
-    watermarkColumnName: String
+    watermarkColumnName: String,
+    connectionUnwrapper: Connection => VerticaConnection = (c: Connection) => c.asInstanceOf[VerticaConnection]
 ) extends InDataOffsetBatchStorage[FormattedRecordBatch[Unit, VerticaRowBatch]]
     with Logging {
 
@@ -81,18 +83,22 @@ class InRowOffsetVerticaFileStorage(
     Using.resource(dbDataSource.getConnection) { connection =>
       connection.setAutoCommit(false)
       val copyQuery = batch.copyStatement(table)
-      Using.resource(connection.prepareStatement(copyQuery)) { copyStatement =>
-        try {
-          log.info(s"Running statement: $copyQuery")
-          val result = copyStatement.executeUpdate()
-          connection.commit()
-          log.info(s"Successfully committed $result record(s)")
-        } catch {
-          case e: SQLDataException =>
-            log.error(e)("Failed inserting data, rolling back the transaction")
-            connection.rollback()
-            throw e
-        }
+      try {
+        log.info(s"Running statement: $copyQuery")
+
+        val stream = new VerticaCopyStream(connectionUnwrapper(connection), copyQuery)
+        stream.start()
+        stream.addStream(batch.inputStream)
+        stream.execute()
+        val copyResult = stream.finish()
+
+        connection.commit()
+        log.info(s"Successfully committed $copyResult record(s)")
+      } catch {
+        case e: SQLDataException =>
+          log.error(e)("Failed inserting data, rolling back the transaction")
+          connection.rollback()
+          throw e
       }
     }
   }
@@ -106,7 +112,8 @@ object InRowOffsetVerticaBatchStorage {
       private val _topicColumnName: String,
       private val _partitionColumnName: String,
       private val _offsetColumnName: String,
-      private val _watermarkColumnName: String
+      private val _watermarkColumnName: String,
+      private val u: Connection => VerticaConnection = null
   ) {
 
     /**
@@ -118,6 +125,8 @@ object InRowOffsetVerticaBatchStorage {
       * Sets the table to load data to.
       */
     def table(name: String): Builder = copy(_table = name)
+
+    def unwrapper(un: Connection => VerticaConnection): Builder = copy(u = un)
 
     /**
       * Sets the names of the columns in the table that are used for storing the stream position
@@ -146,7 +155,8 @@ object InRowOffsetVerticaBatchStorage {
         _topicColumnName,
         _partitionColumnName,
         _offsetColumnName,
-        _watermarkColumnName
+        _watermarkColumnName,
+        u
       )
     }
   }
