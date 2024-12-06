@@ -10,9 +10,8 @@ package com.adform.streamloader.loaders
 
 import com.adform.streamloader.hadoop.{DerivedAvroParquetFileBuilder, HadoopFileStorage}
 import com.adform.streamloader.model.{ExampleMessage, StreamRecord, Timestamp}
+import com.adform.streamloader.sink.batch.v2.formatting.FormattingRecordBatcher
 import com.adform.streamloader.sink.batch.v2.{BatchCommitStrategy, RecordBatchingSink}
-import com.adform.streamloader.sink.batch.v2.formatting.{FormattedRecordBatch, FormattingRecordBatcher}
-import com.adform.streamloader.sink.file.FileCommitStrategy.ReachedAnyOf
 import com.adform.streamloader.sink.file._
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._

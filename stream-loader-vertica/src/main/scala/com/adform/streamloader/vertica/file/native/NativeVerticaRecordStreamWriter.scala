@@ -8,7 +8,6 @@
 
 package com.adform.streamloader.vertica.file.native
 
-import com.adform.streamloader.sink.batch.RecordStreamWriter
 
 import java.io.{ByteArrayOutputStream, OutputStream}
 
@@ -18,7 +17,7 @@ import java.io.{ByteArrayOutputStream, OutputStream}
   * See the native format specification for more details:
   * https://www.vertica.com/docs/9.2.x/HTML/Content/Authoring/AdministratorsGuide/BinaryFilesAppendix/CreatingNativeBinaryFormatFiles.htm
   */
-class NativeVerticaRecordStreamWriter[R: NativeVerticaRecordEncoder](os: OutputStream) extends RecordStreamWriter[R] {
+class NativeVerticaRecordStreamWriter[R: NativeVerticaRecordEncoder](os: OutputStream) /*extends RecordStreamWriter[R]*/ {
 
   private val recordEncoder = implicitly[NativeVerticaRecordEncoder[R]]
 
@@ -38,7 +37,7 @@ class NativeVerticaRecordStreamWriter[R: NativeVerticaRecordEncoder](os: OutputS
     nullBits(columnIndex / 8) = (nullBits(columnIndex / 8) | (1 << (8 - (columnIndex % 8) - 1))).asInstanceOf[Byte]
   }
 
-  override def writeHeader(): Unit = {
+  def writeHeader(): Unit = {
     pw.writeBytes(0x4e, 0x41, 0x54, 0x49, 0x56, 0x45, 0x0a, 0xff, 0x0d, 0x0a, 0x00) // magic bytes
     pw.writeInt32(
       2 + 1 + 2 + 4 * columnCount
@@ -49,7 +48,7 @@ class NativeVerticaRecordStreamWriter[R: NativeVerticaRecordEncoder](os: OutputS
     recordEncoder.staticColumnSizes.foreach(pw.writeInt32) // column sizes
   }
 
-  override def writeRecord(record: R): Unit = {
+  def writeRecord(record: R): Unit = {
     buffer.reset()
     recordEncoder.write(record, bufferPw) // write record bytes to buffer
     pw.writeInt32(buffer.size()) // write record size to output
@@ -61,5 +60,5 @@ class NativeVerticaRecordStreamWriter[R: NativeVerticaRecordEncoder](os: OutputS
     buffer.writeTo(os) // dump buffer to output
   }
 
-  override def close(): Unit = os.close()
+  def close(): Unit = os.close()
 }

@@ -19,7 +19,6 @@ import com.adform.streamloader.sink.file.Compression
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.vertica._
-import com.adform.streamloader.vertica.file.native.NativeVerticaFileBuilder
 import com.adform.streamloader.vertica.v2.{ExternalOffsetVerticaBatchStorage, ExternalOffsetVerticaBatcher, VerticaNativeRowBatchBuilder}
 import com.adform.streamloader.{Loader, StreamLoader}
 import com.typesafe.config.{Config, ConfigFactory}
