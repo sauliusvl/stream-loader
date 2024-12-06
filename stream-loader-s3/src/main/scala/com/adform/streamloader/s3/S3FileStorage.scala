@@ -19,7 +19,6 @@ import software.amazon.awssdk.services.s3.model._
 import java.io.{File, InputStream}
 import scala.jdk.CollectionConverters._
 
-
 /**
   * An S3 compatible file storage, stores files and commits offsets to Kafka in a two-phase transaction.
   * The file upload prepare/stage phases consist of starting and completing a multi-part upload with a single part.

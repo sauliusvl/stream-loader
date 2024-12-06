@@ -19,53 +19,53 @@ import org.json4s.native.JsonMethods.{compact, render}
 import scala.collection.concurrent.TrieMap
 
 /**
- * An abstract batch storage that stores batches and commits offsets to Kafka in a two phase transaction.
- * Committed stream positions are looked up in Kafka.
- * The batch commit algorithm proceeds in phases as follows:
- *
- *   1. stage the batch to storage (e.g. upload file to a temporary path),
- *   1. stage offsets to Kafka by performing an offset commit without modifying the actual offset, instead
- *      saving the new offset and the staged batch information (e.g. file path of the temporary uploaded file)
- *      serialized as compressed and base64 encoded JSON to the offset commit metadata field,
- *   1. store the staged batch (e.g. move the temporary file to the final destination)
- *   1. commit new offsets to Kafka and clear the staging information from the offset metadata.
- *
- * If committing fails in the first two stages the recovery will revert it, if it fails afterwards, recovery will
- * complete the transaction.
- *
- * Implementers need to define the batch staging and storing.
- *
- * @tparam B Type of record batches.
- * @tparam S Type of the batch staging information, must be JSON serializable.
- */
+  * An abstract batch storage that stores batches and commits offsets to Kafka in a two phase transaction.
+  * Committed stream positions are looked up in Kafka.
+  * The batch commit algorithm proceeds in phases as follows:
+  *
+  *   1. stage the batch to storage (e.g. upload file to a temporary path),
+  *   1. stage offsets to Kafka by performing an offset commit without modifying the actual offset, instead
+  *      saving the new offset and the staged batch information (e.g. file path of the temporary uploaded file)
+  *      serialized as compressed and base64 encoded JSON to the offset commit metadata field,
+  *   1. store the staged batch (e.g. move the temporary file to the final destination)
+  *   1. commit new offsets to Kafka and clear the staging information from the offset metadata.
+  *
+  * If committing fails in the first two stages the recovery will revert it, if it fails afterwards, recovery will
+  * complete the transaction.
+  *
+  * Implementers need to define the batch staging and storing.
+  *
+  * @tparam B Type of record batches.
+  * @tparam S Type of the batch staging information, must be JSON serializable.
+  */
 abstract class TwoPhaseCommitBatchStorage[-B <: RecordBatch, S: JsonSerializer]
-  extends RecordBatchStorage[B]
+    extends RecordBatchStorage[B]
     with Logging
     with Metrics {
 
   override protected def metricsRoot: String = ""
 
   /**
-   * Stages a record batch to storage.
-   *
-   * @param batch Record batch to store.
-   * @return Information about the staging.
-   */
+    * Stages a record batch to storage.
+    *
+    * @param batch Record batch to store.
+    * @return Information about the staging.
+    */
   protected def stageBatch(batch: B): S
 
   /**
-   * Finalizes storage of a staged record batch.
-   *
-   * @param staging Batch staging information.
-   */
+    * Finalizes storage of a staged record batch.
+    *
+    * @param staging Batch staging information.
+    */
   protected def storeBatch(staging: S): Unit
 
   /**
-   * Checks whether a staged batch is actually stored, used during recovery.
-   *
-   * @param staging Batch staging information.
-   * @return Whether the batch is fully stored.
-   */
+    * Checks whether a staged batch is actually stored, used during recovery.
+    *
+    * @param staging Batch staging information.
+    * @return Whether the batch is fully stored.
+    */
   protected def isBatchStored(staging: S): Boolean
 
   final override def recover(topicPartitions: Set[TopicPartition]): Unit = {
@@ -91,8 +91,8 @@ abstract class TwoPhaseCommitBatchStorage[-B <: RecordBatch, S: JsonSerializer]
   }
 
   /**
-   * Commits a given batch to storage.
-   */
+    * Commits a given batch to storage.
+    */
   final override def commitBatch(batch: B): Unit = {
     val staging = stageBatch(batch)
     stageKafkaCommit(batch, staging)
@@ -101,17 +101,17 @@ abstract class TwoPhaseCommitBatchStorage[-B <: RecordBatch, S: JsonSerializer]
   }
 
   /**
-   * Gets the latest committed stream positions for the given partitions.
-   */
+    * Gets the latest committed stream positions for the given partitions.
+    */
   final override def committedPositions(
-                                         topicPartitions: Set[TopicPartition]
-                                       ): Map[TopicPartition, Option[StreamPosition]] = {
+      topicPartitions: Set[TopicPartition]
+  ): Map[TopicPartition, Option[StreamPosition]] = {
     committedOffsets(topicPartitions).map(kv => (kv._1, kv._2.map(_._1)))
   }
 
   private def committedOffsets(
-                                topicPartitions: Set[TopicPartition]
-                              ): Map[TopicPartition, Option[(StreamPosition, Option[StagedOffsetCommit[S]])]] = {
+      topicPartitions: Set[TopicPartition]
+  ): Map[TopicPartition, Option[(StreamPosition, Option[StagedOffsetCommit[S]])]] = {
     val kafkaOffsets = kafkaContext.committed(topicPartitions)
     topicPartitions.map(tp => (tp, kafkaOffsets.get(tp).flatten.map(parseOffsetAndMetadata))).toMap
   }

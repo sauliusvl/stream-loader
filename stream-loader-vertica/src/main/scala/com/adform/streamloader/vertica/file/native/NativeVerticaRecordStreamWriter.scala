@@ -8,7 +8,6 @@
 
 package com.adform.streamloader.vertica.file.native
 
-
 import java.io.{ByteArrayOutputStream, OutputStream}
 
 /**
@@ -17,7 +16,9 @@ import java.io.{ByteArrayOutputStream, OutputStream}
   * See the native format specification for more details:
   * https://www.vertica.com/docs/9.2.x/HTML/Content/Authoring/AdministratorsGuide/BinaryFilesAppendix/CreatingNativeBinaryFormatFiles.htm
   */
-class NativeVerticaRecordStreamWriter[R: NativeVerticaRecordEncoder](os: OutputStream) /*extends RecordStreamWriter[R]*/ {
+class NativeVerticaRecordStreamWriter[R: NativeVerticaRecordEncoder](
+    os: OutputStream
+) /*extends RecordStreamWriter[R]*/ {
 
   private val recordEncoder = implicitly[NativeVerticaRecordEncoder[R]]
 

@@ -51,7 +51,7 @@ class HadoopFileStorage[P](
   }
 
   private def stageSingleBatch(partition: P, batch: Path, recordRanges: Seq[StreamRange]): FileStaging = {
-    val sourceFilePath = batch //new Path(batch.path.toString)
+    val sourceFilePath = batch // new Path(batch.path.toString)
     // val stagingFilePath = new Path(stagingPath, stagingFilePathFormatter.formatPath(partition, batch.recordRanges))
     val targetFilePath = new Path(basePath, destinationFilePathFormatter.formatPath(partition, recordRanges))
 

@@ -27,7 +27,6 @@ import org.apache.parquet.hadoop.util.HadoopOutputFile
 
 import java.io.OutputStream
 
-
 //class HadoopIO(fs: FileSystem, stagingDirectory: Path, nameFormat: String) extends StreamBatch[Path] {
 //
 //  def this(fs: FileSystem, stagingDirectory: String, nameFormat: String = "%s.tmp") = this(fs, new Path(stagingDirectory), nameFormat)
@@ -46,18 +45,17 @@ import java.io.OutputStream
 
 // case class HadoopFileBatch(path: Path, recordCount: Long, recordRanges: Seq[StreamRange]) extends RecordBatch
 
-
 ///////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Base class for Avro based parquet file builders.
- *
- * @param schema Avro schema to use.
- * @param config Parquet file configuration.
- * @tparam R type of the records being added.
- */
+  * Base class for Avro based parquet file builders.
+  *
+  * @param schema Avro schema to use.
+  * @param config Parquet file configuration.
+  * @tparam R type of the records being added.
+  */
 abstract class AvroParquetFileBuilder[R](file: OutputFile, schema: Schema, config: ParquetConfig = ParquetConfig())
- extends BaseBatchBuilder[R, String] {
+    extends BaseBatchBuilder[R, String] {
 
   protected val parquetWriter: ParquetWriter[GenericRecord] = {
     val conf = new Configuration()
@@ -74,7 +72,7 @@ abstract class AvroParquetFileBuilder[R](file: OutputFile, schema: Schema, confi
   override def build(): Option[String] = {
     parquetWriter.close()
     Some(file.getPath)
-    //Some(io.path)
+    // Some(io.path)
   }
 
   override def close(): Unit = {
@@ -83,10 +81,12 @@ abstract class AvroParquetFileBuilder[R](file: OutputFile, schema: Schema, confi
 }
 
 /**
- * Parquet writer that derives the Avro schema and encoder at compile time from the record type.
- */
-class DerivedAvroParquetFileBuilder[R: Encoder: Decoder: SchemaFor](file: OutputFile, config: ParquetConfig = ParquetConfig())
-  extends AvroParquetFileBuilder[R](file, AvroSchema[R], config) {
+  * Parquet writer that derives the Avro schema and encoder at compile time from the record type.
+  */
+class DerivedAvroParquetFileBuilder[R: Encoder: Decoder: SchemaFor](
+    file: OutputFile,
+    config: ParquetConfig = ParquetConfig()
+) extends AvroParquetFileBuilder[R](file, AvroSchema[R], config) {
 
   private val recordFormat = RecordFormat[R]
 

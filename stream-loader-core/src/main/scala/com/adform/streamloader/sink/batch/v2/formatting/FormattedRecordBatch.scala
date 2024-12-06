@@ -7,20 +7,18 @@ import com.adform.streamloader.util.TimeProvider
 
 import scala.collection.mutable
 
-
 case class FormattedRecordBatch[P, +B](
-                                        partitionBatches: Map[P, B],
-                                        recordCount: Long,
-                                        recordRanges: Seq[StreamRange]
-                                      ) extends RecordBatch
-
+    partitionBatches: Map[P, B],
+    recordCount: Long,
+    recordRanges: Seq[StreamRange]
+) extends RecordBatch
 
 class FormattedRecordBatchBuilder[R, P, B](
-                                            recordFormatter: RecordFormatter[R],
-                                            recordPartitioner: RecordPartitioner[R, P],
-                                            partitionBatchBuilder: P => BatchBuilder[R, B]
-                                          )(implicit timeProvider: TimeProvider = TimeProvider.system)
-  extends BaseRecordBatchBuilder[FormattedRecordBatch[P, B]]()(timeProvider)
+    recordFormatter: RecordFormatter[R],
+    recordPartitioner: RecordPartitioner[R, P],
+    partitionBatchBuilder: P => BatchBuilder[R, B]
+)(implicit timeProvider: TimeProvider = TimeProvider.system)
+    extends BaseRecordBatchBuilder[FormattedRecordBatch[P, B]]()(timeProvider)
     with InProgressPartitionedRecordBatch[P] {
 
   private val partitionBuilders: mutable.HashMap[P, BatchBuilder[R, B]] = mutable.HashMap.empty

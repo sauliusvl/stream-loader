@@ -20,20 +20,20 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /**
- * Two-phase commit staging information, part of the kafka offset commit metadata.
- * The staging information contains the staged record range start and end positions and
- * some batch dependent storage information (e.g. staged temp file path), which must be JSON serializable.
- */
+  * Two-phase commit staging information, part of the kafka offset commit metadata.
+  * The staging information contains the staged record range start and end positions and
+  * some batch dependent storage information (e.g. staged temp file path), which must be JSON serializable.
+  */
 case class StagedOffsetCommit[S: JsonSerializer](staging: S, start: StreamPosition, end: StreamPosition)
 
 /**
- * Kafka commit metadata used in the two-phase commit implementation, stored for each topic partition separately.
- * Consists of the currently stored watermark and an optional staging part, if a commit is in progress.
- */
+  * Kafka commit metadata used in the two-phase commit implementation, stored for each topic partition separately.
+  * Consists of the currently stored watermark and an optional staging part, if a commit is in progress.
+  */
 case class TwoPhaseCommitMetadata[S: JsonSerializer](
-                                                      watermark: Timestamp,
-                                                      stagedOffsetCommit: Option[StagedOffsetCommit[S]]
-                                                    ) {
+    watermark: Timestamp,
+    stagedOffsetCommit: Option[StagedOffsetCommit[S]]
+) {
 
   def toJson: String = {
     val stagingJson = stagedOffsetCommit.map(s =>
@@ -49,8 +49,8 @@ case class TwoPhaseCommitMetadata[S: JsonSerializer](
   }
 
   /**
-   * Serializes the metadata by converting it to JSON, compressing and base64 encoding.
-   */
+    * Serializes the metadata by converting it to JSON, compressing and base64 encoding.
+    */
   def serialize: String = new String(Base64.getEncoder.encode(Zstd.compress(toJson.getBytes("UTF-8"))), "UTF-8")
 }
 
@@ -59,10 +59,10 @@ object TwoPhaseCommitMetadata extends Logging {
   implicit val formats: Formats = DefaultFormats
 
   /**
-   * Deserializes a given metadata string read from Kafka.
-   * Attempts base64 decoding, if it fails tries fall-backing to parsing JSON directly for backwards compatibility.
-   * If decoding succeeds the bytes are decompressed before parsing JSON.
-   */
+    * Deserializes a given metadata string read from Kafka.
+    * Attempts base64 decoding, if it fails tries fall-backing to parsing JSON directly for backwards compatibility.
+    * If decoding succeeds the bytes are decompressed before parsing JSON.
+    */
   def deserialize[S: JsonSerializer](metadata: String): Option[TwoPhaseCommitMetadata[S]] = {
     val (bytes, isCompressed) = Try(Base64.getDecoder.decode(metadata)) match {
       case Success(d) => (d, true)

@@ -15,4 +15,3 @@ trait RecordBatcher[+B <: RecordBatch] extends Closeable {
 
   override def close(): Unit = {}
 }
-

@@ -86,7 +86,10 @@ class BaseS3Loader extends Loader {
             .s3Client(s3Client)
             .bucket(cfg.getString("s3.bucket"))
             .filePathFormatter(
-              new TimePartitioningFilePathFormatter[LocalDate](cfg.getStringOpt("file.time-partition.pattern"), Some("csv"))
+              new TimePartitioningFilePathFormatter[LocalDate](
+                cfg.getStringOpt("file.time-partition.pattern"),
+                Some("csv")
+              )
             )
             .build()
         )

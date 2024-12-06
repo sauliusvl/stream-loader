@@ -75,41 +75,42 @@ class IcebergRecordPartitioner(spec: PartitionSpec, schema: Schema)
 object IcebergRecordBatcher {
 
   case class Builder(
-    private val _table: Table,
-    private val _recordFormatter: RecordFormatter[IcebergRecord],
-    private val _fileFormat: FileFormat,
-    private val _writeProperties: Map[String, String]
+      private val _table: Table,
+      private val _recordFormatter: RecordFormatter[IcebergRecord],
+      private val _fileFormat: FileFormat,
+      private val _writeProperties: Map[String, String]
   ) {
 
     /**
-     * Sets the Iceberg table to build batches for.
-     */
+      * Sets the Iceberg table to build batches for.
+      */
     def table(table: Table): Builder = copy(_table = table)
 
     /**
-     * Sets the record formatter that converts from consumer records to Iceberg records.
-     */
+      * Sets the record formatter that converts from consumer records to Iceberg records.
+      */
     def recordFormatter(formatter: RecordFormatter[IcebergRecord]): Builder = copy(_recordFormatter = formatter)
 
     /**
-     * Sets the file format to use.
-     */
+      * Sets the file format to use.
+      */
     def fileFormat(format: FileFormat): Builder = copy(_fileFormat = format)
 
     /**
-     * Sets any additional properties for the underlying data file builder.
-     */
+      * Sets any additional properties for the underlying data file builder.
+      */
     def writeProperties(properties: Map[String, String]): Builder = copy(_writeProperties = properties)
 
     def build(): RecordBatcher[FormattedRecordBatch[PartitionKey, IcebergBatch]] = {
       if (_table == null) throw new IllegalStateException("Must specify a destination table")
       if (_recordFormatter == null) throw new IllegalStateException("Must specify a RecordFormatter")
 
-      () => new FormattedRecordBatchBuilder[IcebergRecord, PartitionKey, IcebergBatch](
-        _recordFormatter,
-        new IcebergRecordPartitioner(_table),
-        pk => new IcebergBatchBuilder(_table, pk, _fileFormat, _writeProperties)
-      )
+      () =>
+        new FormattedRecordBatchBuilder[IcebergRecord, PartitionKey, IcebergBatch](
+          _recordFormatter,
+          new IcebergRecordPartitioner(_table),
+          pk => new IcebergBatchBuilder(_table, pk, _fileFormat, _writeProperties)
+        )
     }
   }
 
@@ -120,7 +121,6 @@ object IcebergRecordBatcher {
     _writeProperties = Map.empty
   )
 }
-
 
 class IcebergRecordOrdering(sortOrder: SortOrder, schema: Schema) extends Ordering[IcebergRecord] {
   def this(table: Table) = this(table.sortOrder(), table.schema())
@@ -188,9 +188,9 @@ class IcebergRecordOrdering(sortOrder: SortOrder, schema: Schema) extends Orderi
   }
 
   private lazy val comparator = SortOrderVisitor
-      .visit(sortOrder, new ComparatorSortOrderVisitor(schema))
-      .asScala
-      .reduce((c1, c2) => c1.thenComparing(c2))
+    .visit(sortOrder, new ComparatorSortOrderVisitor(schema))
+    .asScala
+    .reduce((c1, c2) => c1.thenComparing(c2))
 
   override def compare(x: IcebergRecord, y: IcebergRecord): Int = if (sortOrder.isSorted) {
     comparator.compare(x, y)

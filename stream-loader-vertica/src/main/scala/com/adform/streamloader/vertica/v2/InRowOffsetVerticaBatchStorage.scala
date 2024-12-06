@@ -163,4 +163,3 @@ object InRowOffsetVerticaBatchStorage {
 
   def builder(): Builder = Builder(null, null, "_topic", "_partition", "_offset", "_watermark")
 }
-
