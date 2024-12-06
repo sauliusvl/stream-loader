@@ -8,15 +8,17 @@
 
 package com.adform.streamloader.s3
 
-import com.adform.streamloader.sink.batch.v2.storage.TwoPhaseCommitBatchStorage
 import com.adform.streamloader.sink.batch.v2.formatting.FormattedRecordBatch
-import com.adform.streamloader.sink.file.{FilePathFormatter, FileRecordBatch}
+import com.adform.streamloader.sink.batch.v2.storage.TwoPhaseCommitBatchStorage
+import com.adform.streamloader.sink.file.FilePathFormatter
 import com.adform.streamloader.util.Logging
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model._
 
+import java.io.{File, InputStream}
 import scala.jdk.CollectionConverters._
+
 
 /**
   * An S3 compatible file storage, stores files and commits offsets to Kafka in a two-phase transaction.
@@ -26,12 +28,13 @@ class S3FileStorage[P](
     s3Client: S3Client,
     bucket: String,
     filePathFormatter: FilePathFormatter[P]
-) extends TwoPhaseCommitBatchStorage[FormattedRecordBatch[P, FileRecordBatch], S3MultiFileStaging]
+) extends TwoPhaseCommitBatchStorage[FormattedRecordBatch[P, File], S3MultiFileStaging]
     with Logging {
 
-  override protected def stageBatch(batch: FormattedRecordBatch[P, FileRecordBatch]): S3MultiFileStaging = {
+  override protected def stageBatch(batch: FormattedRecordBatch[P, File]): S3MultiFileStaging = {
     val stagings = batch.partitionBatches.map { case (partition, partitionBatch) =>
-      stageSingleBatch(partition, partitionBatch)
+      val path = filePathFormatter.formatPath(partition, batch.recordRanges)
+      stageSingleBatch(partition, path, partitionBatch)
     }
     log.debug(s"Successfully staged batch $batch")
     S3MultiFileStaging(stagings.toSeq)
@@ -62,8 +65,8 @@ class S3FileStorage[P](
     objects.result()
   }
 
-  private def stageSingleBatch(partition: P, batch: FileRecordBatch): S3FileStaging = {
-    val path = filePathFormatter.formatPath(partition, batch.recordRanges)
+  private def stageSingleBatch(partition: P, path: String, stream: File): S3FileStaging = {
+
     val uploadRequest = CreateMultipartUploadRequest.builder().bucket(bucket).key(path).build()
 
     val upload = s3Client.createMultipartUpload(uploadRequest)
@@ -79,7 +82,7 @@ class S3FileStorage[P](
 
     log.debug(s"Starting multi-part upload with ID $uploadId for file $path")
 
-    val uploadPartResult = s3Client.uploadPart(uploadPartRequest, RequestBody.fromFile(batch.file))
+    val uploadPartResult = s3Client.uploadPart(uploadPartRequest, RequestBody.fromFile(stream))
     val uploadedPartTag = uploadPartResult.eTag()
 
     log.debug(s"Staged file to multi-part upload ID $uploadId with tag $uploadedPartTag for file $path")

@@ -12,10 +12,11 @@ import java.util.UUID
 import com.adform.streamloader.fixtures.{Container, ContainerWithEndpoint, DockerNetwork, SimpleContainer}
 import com.adform.streamloader.loaders.{TestExternalOffsetVerticaLoader, TestInRowOffsetVerticaLoader}
 import com.adform.streamloader.model.{ExampleMessage, StreamPosition, Timestamp}
-import com.adform.streamloader.sink.batch.RecordBatch
-import com.adform.streamloader.sink.batch.storage.RecordBatchStorage
+import com.adform.streamloader.sink.batch.v2.RecordBatch
+import com.adform.streamloader.sink.batch.v2.storage.RecordBatchStorage
 import com.adform.streamloader.util.Retry
-import com.adform.streamloader.vertica.{ExternalOffsetVerticaFileStorage, InRowOffsetVerticaFileStorage}
+import com.adform.streamloader.vertica.InRowOffsetVerticaBatchStorage
+import com.adform.streamloader.vertica.v2.ExternalOffsetVerticaBatchStorage
 import com.adform.streamloader.{BuildInfo, Loader}
 import org.mandas.docker.client.DockerClient
 import org.mandas.docker.client.messages.{ContainerConfig, HostConfig}
@@ -181,7 +182,7 @@ case class ExternalOffsetVerticaStorageBackend(
     ) {
 
   override def getBatchStorage: RecordBatchStorage[RecordBatch] =
-    ExternalOffsetVerticaFileStorage
+    ExternalOffsetVerticaBatchStorage
       .builder()
       .dbDataSource(dataSource)
       .table(table)
@@ -255,7 +256,7 @@ case class InRowOffsetVerticaStorageBackend(
     ) {
 
   override def getBatchStorage: RecordBatchStorage[RecordBatch] =
-    InRowOffsetVerticaFileStorage
+    InRowOffsetVerticaBatchStorage
       .builder()
       .dbDataSource(dataSource)
       .table(table)

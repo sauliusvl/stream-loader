@@ -99,5 +99,5 @@ class VerticaIntegrationTests
 
   it should behave like basicLoader("Vertica external offset loader", verticaExternalStorageBackend)
 
-  // it should behave like basicLoader("Vertica in row offset loader", verticaInRowStorageBackend)
+  it should behave like basicLoader("Vertica in row offset loader", verticaInRowStorageBackend)
 }

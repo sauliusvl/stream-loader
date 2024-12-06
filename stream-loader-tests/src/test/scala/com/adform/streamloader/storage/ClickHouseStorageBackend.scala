@@ -8,7 +8,7 @@
 
 package com.adform.streamloader.storage
 
-import com.adform.streamloader.clickhouse.ClickHouseFileStorage
+import com.adform.streamloader.clickhouse.v2.ClickHouseRecordBatchStorage
 import com.adform.streamloader.fixtures.{Container, ContainerWithEndpoint, DockerNetwork, SimpleContainer}
 import com.adform.streamloader.model.{ExampleMessage, StreamPosition, Timestamp}
 import com.adform.streamloader.source.KafkaContext
@@ -56,7 +56,7 @@ case class ClickHouseStorageBackend(
 
   val kafkaContext: KafkaContext = getKafkaContext(kafkaContainer, "test")
 
-  val batchStorage: ClickHouseFileStorage = ClickHouseFileStorage
+  val batchStorage: ClickHouseRecordBatchStorage = ClickHouseRecordBatchStorage
     .builder()
     .dbDataSource(dataSource)
     .table(table)

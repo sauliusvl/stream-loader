@@ -25,9 +25,9 @@ trait StreamBatch[B] {
   }
 }
 
-class LocalFileStreamBatch(file: File) extends StreamBatch[InputStream] {
+class LocalFileStreamBatch(file: File) extends StreamBatch[File] {
   override val out: OutputStream = new FileOutputStream(file)
-  override def build: InputStream = new FileInputStream(file)
+  override def build: File = file
 }
 
 class TempFileStreamBatch extends StreamBatch[InputStream] {

@@ -8,12 +8,13 @@
 
 package com.adform.streamloader.hadoop
 
-import java.io.IOException
 import com.adform.streamloader.model.StreamRange
 import com.adform.streamloader.sink.batch.v2.formatting.FormattedRecordBatch
 import com.adform.streamloader.sink.batch.v2.storage.TwoPhaseCommitBatchStorage
-import com.adform.streamloader.sink.file.{FilePathFormatter, FileRecordBatch}
+import com.adform.streamloader.sink.file.FilePathFormatter
 import org.apache.hadoop.fs.{FileSystem, Path}
+
+import java.io.IOException
 
 /**
   * A Hadoop compatible file system based storage, most likely used for storing to HDFS.
