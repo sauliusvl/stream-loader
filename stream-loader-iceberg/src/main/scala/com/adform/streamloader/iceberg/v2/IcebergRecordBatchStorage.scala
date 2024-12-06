@@ -9,7 +9,7 @@
 package com.adform.streamloader.iceberg.v2
 
 import com.adform.streamloader.model.{StreamPosition, Timestamp}
-import com.adform.streamloader.sink.batch.v2.FormattedRecordBatch
+import com.adform.streamloader.sink.batch.v2.formatting.FormattedRecordBatch
 import com.adform.streamloader.sink.batch.v2.storage.InDataOffsetBatchStorage
 import org.apache.iceberg.{PartitionKey, Table}
 import org.apache.kafka.common.TopicPartition

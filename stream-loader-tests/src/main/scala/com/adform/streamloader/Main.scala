@@ -9,7 +9,7 @@ import com.adform.streamloader.model.{
   StreamRecord,
   Timestamp
 }
-import com.adform.streamloader.sink.batch.v2.FormattedRecordBatch
+
 import com.adform.streamloader.sink.batch.v2.stream.CsvStreamBatchBuilder
 import com.adform.streamloader.sink.batch.{
   RecordBatch,

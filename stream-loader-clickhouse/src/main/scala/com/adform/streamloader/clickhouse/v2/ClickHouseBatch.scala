@@ -8,12 +8,9 @@ package com.adform.streamloader.clickhouse.v2
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import com.adform.streamloader.clickhouse.rowbinary.{
-  RowBinaryClickHousePrimitiveTypeWriter,
-  RowBinaryClickHouseRecordEncoder
-}
+import com.adform.streamloader.clickhouse.rowbinary.{RowBinaryClickHousePrimitiveTypeWriter, RowBinaryClickHouseRecordEncoder}
 import com.adform.streamloader.model._
-import com.adform.streamloader.sink.batch.v2.FormattedRecordBatch
+import com.adform.streamloader.sink.batch.v2.formatting.FormattedRecordBatch
 import com.adform.streamloader.sink.batch.v2.storage.InDataOffsetBatchStorage
 import com.adform.streamloader.sink.batch.v2.stream.{BaseStreamBatchBuilder, CsvStreamBatchBuilder, StreamBatch}
 import com.adform.streamloader.sink.encoding.csv.CsvRecordEncoder
@@ -128,15 +125,15 @@ class ClickHouseRecordBatchStorage(
     }
   }
 
-  override def commitBatchWithOffsets(batch: FormattedRecordBatch[Unit, ClickHouseBatch]): Unit = {
-    val b = batch.partitionBatches(())
+  override def commitBatchWithOffsets(recordBatch: FormattedRecordBatch[Unit, ClickHouseBatch]): Unit = {
+    val batch = recordBatch.partitionBatches(())
     Using.resource(dbDataSource.getConnection) { connection =>
       Using.resource(connection.unwrap(classOf[ClickHouseConnection]).createStatement) { statement =>
         statement
           .write()
-          .data(ClickHousePassThruStream.of(b.inputStream, b.compression, b.format))
+          .data(ClickHousePassThruStream.of(batch.inputStream, batch.compression, batch.format))
           .table(table)
-          .params(Map("max_insert_block_size" -> batch.recordCount.toString).asJava) // atomic insert
+          .params(Map("max_insert_block_size" -> recordBatch.recordCount.toString).asJava) // atomic insert
           .executeAndWait()
       }
     }

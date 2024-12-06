@@ -10,8 +10,9 @@ package com.adform.streamloader.hadoop
 
 import java.io.IOException
 import com.adform.streamloader.model.StreamRange
-import com.adform.streamloader.sink.batch.storage.TwoPhaseCommitBatchStorage
-import com.adform.streamloader.sink.file.{FilePathFormatter, FileRecordBatch, PartitionedFileRecordBatch}
+import com.adform.streamloader.sink.batch.v2.formatting.FormattedRecordBatch
+import com.adform.streamloader.sink.batch.v2.storage.TwoPhaseCommitBatchStorage
+import com.adform.streamloader.sink.file.{FilePathFormatter, FileRecordBatch}
 import org.apache.hadoop.fs.{FileSystem, Path}
 
 /**
@@ -22,18 +23,18 @@ import org.apache.hadoop.fs.{FileSystem, Path}
   */
 class HadoopFileStorage[P](
     hadoopFS: FileSystem,
-    stagingDirectory: String,
-    stagingFilePathFormatter: FilePathFormatter[P],
+    // stagingDirectory: String,
+    // stagingFilePathFormatter: FilePathFormatter[P],
     destinationDirectory: String,
     destinationFilePathFormatter: FilePathFormatter[P]
-) extends TwoPhaseCommitBatchStorage[PartitionedFileRecordBatch[P, FileRecordBatch], MultiFileStaging] {
+) extends TwoPhaseCommitBatchStorage[FormattedRecordBatch[P, String], MultiFileStaging] {
 
-  private val stagingPath = new Path(stagingDirectory)
+  // private val stagingPath = new Path(stagingDirectory)
   private val basePath = new Path(destinationDirectory)
 
-  override protected def stageBatch(batch: PartitionedFileRecordBatch[P, FileRecordBatch]): MultiFileStaging = {
+  override protected def stageBatch(batch: FormattedRecordBatch[P, String]): MultiFileStaging = {
     val stagings = batch.partitionBatches.map { case (partition, fileBatch) =>
-      stageSingleBatch(partition, fileBatch)
+      stageSingleBatch(partition, new Path(fileBatch), batch.recordRanges)
     }
     log.debug(s"Successfully staged batch $batch")
     MultiFileStaging(stagings.toSeq)
@@ -48,16 +49,19 @@ class HadoopFileStorage[P](
     staging.fileStagings.forall(fs => isSingleBatchStored(fs))
   }
 
-  private def stageSingleBatch(partition: P, batch: FileRecordBatch): FileStaging = {
-    val sourceFilePath = new Path(batch.file.toPath.toString)
-    val stagingFilePath = new Path(stagingPath, stagingFilePathFormatter.formatPath(partition, batch.recordRanges))
-    val targetFilePath = new Path(basePath, destinationFilePathFormatter.formatPath(partition, batch.recordRanges))
+  private def stageSingleBatch(partition: P, batch: Path, recordRanges: Seq[StreamRange]): FileStaging = {
+    val sourceFilePath = batch //new Path(batch.path.toString)
+    // val stagingFilePath = new Path(stagingPath, stagingFilePathFormatter.formatPath(partition, batch.recordRanges))
+    val targetFilePath = new Path(basePath, destinationFilePathFormatter.formatPath(partition, recordRanges))
 
-    log.debug(s"Staging file $sourceFilePath to $stagingFilePath")
-
-    hadoopFS.copyFromLocalFile(false, true, sourceFilePath, stagingFilePath)
-
-    FileStaging(stagingFilePath.toUri.toString, targetFilePath.toUri.toString)
+    if (batch.toUri.getScheme == "file" && hadoopFS.getScheme != "file") {
+      val stagingFilePath = s"${hadoopFS.getScheme}://${batch.toUri.getRawPath}"
+      log.debug(s"Uploading locally staged file $sourceFilePath to $stagingFilePath")
+      hadoopFS.copyFromLocalFile(false, true, sourceFilePath, new Path(stagingFilePath))
+      FileStaging(stagingFilePath, targetFilePath.toUri.toString)
+    } else {
+      FileStaging(batch.toUri.toString, targetFilePath.toUri.toString)
+    }
   }
 
   private def storeSingleBatch(staging: FileStaging): Unit = {
@@ -143,8 +147,8 @@ object HadoopFileStorage {
 
       new HadoopFileStorage[P](
         _hadoopFS,
-        _stagingBasePath,
-        stagingFormatter,
+        // _stagingBasePath,
+        // stagingFormatter,
         _destinationBasePath,
         _destinationFilePathFormatter
       )

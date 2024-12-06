@@ -8,34 +8,23 @@
 
 package com.adform.streamloader.loaders
 
-import java.time.LocalDateTime
-import java.util.UUID
-import com.adform.streamloader.clickhouse._
-import com.adform.streamloader.clickhouse.rowbinary.RowBinaryClickHouseFileBuilder
 import com.adform.streamloader.clickhouse.v2._
-import com.adform.streamloader.sink.encoding.macros.DataTypeEncodingAnnotation.DecimalEncoding
+import com.adform.streamloader.model.{ExampleMessage, Timestamp}
+import com.adform.streamloader.sink.batch.RecordFormatter
 import com.adform.streamloader.sink.batch.v2.BatchCommitStrategy.ReachedAnyOf
-import com.adform.streamloader.model.{ExampleMessage, StreamRecord, Timestamp}
-import com.adform.streamloader.sink.batch.v2.{
-  BatchCommitStrategy,
-  FormattingRecordBatcher,
-  RecordBatcher,
-  RecordBatchingSink
-}
-import com.adform.streamloader.sink.batch.{RecordFormatter, RecordPartitioner}
-import com.adform.streamloader.sink.batch.v2.stream.{LocalFileStreamBatch, TempFileStreamBatch}
-import com.adform.streamloader.sink.encoding.csv.CsvTypeEncoder
+import com.adform.streamloader.sink.batch.v2._
+import com.adform.streamloader.sink.batch.v2.formatting.FormattingRecordBatcher
+import com.adform.streamloader.sink.batch.v2.stream.TempFileStreamBatch
+import com.adform.streamloader.sink.encoding.macros.DataTypeEncodingAnnotation.DecimalEncoding
 import com.adform.streamloader.sink.file.Compression
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.{Loader, StreamLoader}
-import com.clickhouse.data.ClickHouseFormat
 import com.typesafe.config.ConfigFactory
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
-import org.apache.commons.io.output.ByteArrayOutputStream
-import com.adform.streamloader.sink.encoding.csv.CsvTypeEncoder._
 
-import java.io.File
+import java.time.LocalDateTime
+import java.util.UUID
 
 /*
 CREATE TABLE IF NOT EXISTS test_table (
@@ -131,9 +120,8 @@ object TestClickHouseLoader extends Loader {
         .builder()
         .recordBatcher(
           FormattingRecordBatcher
-            .builder[TestClickHouseRecord, Unit, ClickHouseBatch]()
+            .builder()
             .formatter(recordFormatter)
-            .partitioner((raw: StreamRecord, formatted: TestClickHouseRecord) => ())
             .batchBuilder(() => new ClickHouseRowBinaryBatchBuilder(new TempFileStreamBatch(), Compression.ZSTD))
             .build()
         )

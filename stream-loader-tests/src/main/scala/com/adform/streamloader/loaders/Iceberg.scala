@@ -12,7 +12,7 @@ import com.adform.streamloader.iceberg.v2._
 import com.adform.streamloader.model.ExampleMessage
 import com.adform.streamloader.sink.batch.RecordFormatter
 import com.adform.streamloader.sink.batch.v2.BatchCommitStrategy._
-import com.adform.streamloader.sink.batch.v2.{FormattingRecordBatcher, RecordBatchingSink, SortingBatchBuilder}
+import com.adform.streamloader.sink.batch.v2.RecordBatchingSink
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.util.UuidExtensions._
@@ -74,21 +74,12 @@ object TestIcebergLoader extends Loader {
       RecordBatchingSink
         .builder()
         .recordBatcher(
-          FormattingRecordBatcher
+          IcebergRecordBatcher
             .builder()
-            .formatter(recordFormatter)
-            .partitioner(recordPartitioner)
-            .partitionBatchBuilder(pk =>
-              new SortingBatchBuilder(
-                new IcebergBatchBuilder(
-                  table,
-                  pk,
-                  FileFormat.PARQUET,
-                  Map("write.parquet.compression-codec" -> "zstd")
-                ),
-                sortOrder
-              )
-            )
+            .table(table)
+            .recordFormatter(recordFormatter)
+            .fileFormat(FileFormat.PARQUET)
+            .writeProperties(Map("write.parquet.compression-codec" -> "zstd"))
             .build()
         )
         .batchCommitStrategy(

@@ -9,8 +9,9 @@
 package com.adform.streamloader.iceberg.v2
 
 import com.adform.streamloader.model.StreamRecord
-import com.adform.streamloader.sink.batch.RecordPartitioner
+import com.adform.streamloader.sink.batch.{RecordFormatter, RecordPartitioner}
 import com.adform.streamloader.sink.batch.v2._
+import com.adform.streamloader.sink.batch.v2.formatting.{FormattedRecordBatch, FormattedRecordBatchBuilder}
 import com.adform.streamloader.util.UuidExtensions.randomUUIDv7
 import org.apache.iceberg._
 import org.apache.iceberg.data.{GenericAppenderFactory, Record => IcebergRecord}
@@ -70,6 +71,56 @@ class IcebergRecordPartitioner(spec: PartitionSpec, schema: Schema)
     pk
   }
 }
+
+object IcebergRecordBatcher {
+
+  case class Builder(
+    private val _table: Table,
+    private val _recordFormatter: RecordFormatter[IcebergRecord],
+    private val _fileFormat: FileFormat,
+    private val _writeProperties: Map[String, String]
+  ) {
+
+    /**
+     * Sets the Iceberg table to build batches for.
+     */
+    def table(table: Table): Builder = copy(_table = table)
+
+    /**
+     * Sets the record formatter that converts from consumer records to Iceberg records.
+     */
+    def recordFormatter(formatter: RecordFormatter[IcebergRecord]): Builder = copy(_recordFormatter = formatter)
+
+    /**
+     * Sets the file format to use.
+     */
+    def fileFormat(format: FileFormat): Builder = copy(_fileFormat = format)
+
+    /**
+     * Sets any additional properties for the underlying data file builder.
+     */
+    def writeProperties(properties: Map[String, String]): Builder = copy(_writeProperties = properties)
+
+    def build(): RecordBatcher[FormattedRecordBatch[PartitionKey, IcebergBatch]] = {
+      if (_table == null) throw new IllegalStateException("Must specify a destination table")
+      if (_recordFormatter == null) throw new IllegalStateException("Must specify a RecordFormatter")
+
+      () => new FormattedRecordBatchBuilder[IcebergRecord, PartitionKey, IcebergBatch](
+        _recordFormatter,
+        new IcebergRecordPartitioner(_table),
+        pk => new IcebergBatchBuilder(_table, pk, _fileFormat, _writeProperties)
+      )
+    }
+  }
+
+  def builder(): Builder = Builder(
+    _table = null,
+    _recordFormatter = null,
+    _fileFormat = FileFormat.PARQUET,
+    _writeProperties = Map.empty
+  )
+}
+
 
 class IcebergRecordOrdering(sortOrder: SortOrder, schema: Schema) extends Ordering[IcebergRecord] {
   def this(table: Table) = this(table.sortOrder(), table.schema())

@@ -14,6 +14,7 @@ import com.adform.streamloader.util.TimeProvider
 import org.apache.kafka.common.TopicPartition
 
 import java.io.Closeable
+import java.time.Instant
 import scala.collection.mutable
 
 /**
@@ -29,6 +30,16 @@ trait RecordBatch extends Closeable {
   def recordCount: Long
 
   override def close(): Unit = {}
+}
+
+trait InProgressPartitionedRecordBatch[P] extends InProgressBatch {
+  def partitionBatches: Map[P, InProgressBatch]
+
+  override def startTime: Instant = partitionBatches.values.map(_.startTime).min
+
+  override def recordCount: Long = partitionBatches.values.map(_.recordCount).sum
+
+  override def estimateSizeBytes(): Long = partitionBatches.values.map(_.estimateSizeBytes()).sum
 }
 
 trait RecordBatchBuilder[+B <: RecordBatch] extends BatchBuilder[StreamRecord, B]

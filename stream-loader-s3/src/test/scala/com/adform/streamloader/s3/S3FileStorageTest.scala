@@ -12,6 +12,7 @@ import java.io.File
 import java.util.UUID
 import com.adform.streamloader.model.{StreamPosition, StreamRange, Timestamp}
 import com.adform.streamloader.sink.batch.storage.TwoPhaseCommitMetadata
+import com.adform.streamloader.sink.batch.v2.formatting.FormattedRecordBatch
 import com.adform.streamloader.sink.file.{FilePathFormatter, PartitionedFileRecordBatch, SingleFileRecordBatch}
 import com.adform.streamloader.source.MockKafkaContext
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
@@ -50,7 +51,7 @@ class S3FileStorageTest extends AnyFunSpec with Matchers with MockS3 {
 
     val sourceFile = File.createTempFile("test", "txt")
     val fileBatch = SingleFileRecordBatch(sourceFile, Seq(StreamRange(tp.topic(), tp.partition(), start, end)))
-    val batch = PartitionedFileRecordBatch[Unit, SingleFileRecordBatch](Map(() -> fileBatch), fileBatch.recordRanges)
+    val batch = FormattedRecordBatch[Unit, SingleFileRecordBatch](Map(() -> fileBatch), 0, fileBatch.recordRanges)
 
     try {
       storage.commitBatch(batch)

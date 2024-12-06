@@ -8,10 +8,10 @@
 
 package com.adform.streamloader.loaders
 
-import com.adform.streamloader.hadoop.HadoopFileStorage
-import com.adform.streamloader.hadoop.parquet.DerivedAvroParquetFileBuilder
+import com.adform.streamloader.hadoop.{DerivedAvroParquetFileBuilder, HadoopFileStorage}
 import com.adform.streamloader.model.{ExampleMessage, StreamRecord, Timestamp}
-import com.adform.streamloader.sink.batch.RecordBatchingSink
+import com.adform.streamloader.sink.batch.v2.{BatchCommitStrategy, RecordBatchingSink}
+import com.adform.streamloader.sink.batch.v2.formatting.{FormattedRecordBatch, FormattingRecordBatcher}
 import com.adform.streamloader.sink.file.FileCommitStrategy.ReachedAnyOf
 import com.adform.streamloader.sink.file._
 import com.adform.streamloader.source.KafkaSource
@@ -20,9 +20,11 @@ import com.adform.streamloader.{Loader, StreamLoader}
 import com.sksamuel.avro4s.ScalePrecision
 import com.typesafe.config.ConfigFactory
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.parquet.hadoop.util.HadoopOutputFile
 
 import java.time.LocalDate
+import java.util.UUID
 import scala.jdk.CollectionConverters._
 import scala.math.BigDecimal.RoundingMode.RoundingMode
 
@@ -56,15 +58,22 @@ object TestParquetHdfsLoader extends Loader {
     val sink = RecordBatchingSink
       .builder()
       .recordBatcher(
-        PartitioningFileRecordBatcher
+        FormattingRecordBatcher
           .builder()
-          .recordFormatter((r: StreamRecord) => Seq(ExampleMessage.parseFrom(r.consumerRecord.value())))
-          .recordPartitioner((r, _) => Timestamp(r.consumerRecord.timestamp()).toDate)
-          .fileBuilderFactory(_ => new DerivedAvroParquetFileBuilder[ExampleMessage]())
-          .fileCommitStrategy(
-            MultiFileCommitStrategy.anyFile(ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records"))))
+          .formatter((r: StreamRecord) => Seq(ExampleMessage.parseFrom(r.consumerRecord.value())))
+          .partitioner((r, _) => Timestamp(r.consumerRecord.timestamp()).toDate)
+          .batchBuilder(_ =>
+            new DerivedAvroParquetFileBuilder[ExampleMessage](
+              HadoopOutputFile.fromPath(
+                new Path(cfg.getString("hdfs.staging-directory"), UUID.randomUUID() + ".parquet"),
+                hadoopFileSystem.getConf
+              )
+            )
           )
           .build()
+      )
+      .batchCommitStrategy(
+        BatchCommitStrategy.ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records")))
       )
       .batchStorage(
         HadoopFileStorage

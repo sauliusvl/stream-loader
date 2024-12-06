@@ -10,7 +10,7 @@ package com.adform.streamloader.loaders
 
 import com.adform.streamloader.model.Timestamp
 import com.adform.streamloader.s3.S3FileStorage
-import com.adform.streamloader.sink.batch.{RecordBatchingSink, RecordFormatter}
+// import com.adform.streamloader.sink.batch.{RecordBatchingSink, RecordFormatter}
 import com.adform.streamloader.sink.encoding.csv.CsvFileBuilder
 import com.adform.streamloader.sink.file.FileCommitStrategy.ReachedAnyOf
 import com.adform.streamloader.sink.file._
@@ -48,58 +48,58 @@ class BaseS3Loader extends Loader {
       builder.build()
     }
 
-    val recordFormatter: RecordFormatter[String] = record => {
-      val tp = s"${record.consumerRecord.topic()};${record.consumerRecord.partition()}"
-      val offset = record.consumerRecord.offset().toString
-      val watermark = record.watermark.millis.toString
-      val msg = new String(record.consumerRecord.value, "UTF-8")
-      Seq(s"$tp;$offset;$watermark;$msg")
-    }
-
-    val source = KafkaSource
-      .builder()
-      .consumerProperties(cfg.getConfig("kafka.consumer").toProperties)
-      .pollTimeout(cfg.getDuration("kafka.poll-timeout"))
-      .topics(Seq(cfg.getString("kafka.topic")))
-      .build()
-
-    val sink =
-      RecordBatchingSink
-        .builder()
-        .recordBatcher(
-          PartitioningFileRecordBatcher
-            .builder()
-            .recordFormatter(recordFormatter)
-            .recordPartitioner((r, _) => Timestamp(r.consumerRecord.timestamp()).toDate)
-            .fileBuilderFactory(_ => new CsvFileBuilder(Compression.NONE))
-            .fileCommitStrategy(
-              MultiFileCommitStrategy.anyFile(
-                ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records")))
-              )
-            )
-            .build()
-        )
-        .batchStorage(
-          S3FileStorage
-            .builder()
-            .s3Client(s3Client)
-            .bucket(cfg.getString("s3.bucket"))
-            .filePathFormatter(
-              new TimePartitioningFilePathFormatter[LocalDate](cfg.getStringOpt("file.time-partition.pattern"), None)
-            )
-            .build()
-        )
-        .partitionGrouping(groupForPartition)
-        .build()
-
-    val loader = new StreamLoader(source, sink)
-
-    sys.addShutdownHook {
-      loader.stop()
-      s3Client.close()
-    }
-
-    loader.start()
+//    val recordFormatter: RecordFormatter[String] = record => {
+//      val tp = s"${record.consumerRecord.topic()};${record.consumerRecord.partition()}"
+//      val offset = record.consumerRecord.offset().toString
+//      val watermark = record.watermark.millis.toString
+//      val msg = new String(record.consumerRecord.value, "UTF-8")
+//      Seq(s"$tp;$offset;$watermark;$msg")
+//    }
+//
+//    val source = KafkaSource
+//      .builder()
+//      .consumerProperties(cfg.getConfig("kafka.consumer").toProperties)
+//      .pollTimeout(cfg.getDuration("kafka.poll-timeout"))
+//      .topics(Seq(cfg.getString("kafka.topic")))
+//      .build()
+//
+//    val sink =
+//      RecordBatchingSink
+//        .builder()
+//        .recordBatcher(
+//          PartitioningFileRecordBatcher
+//            .builder()
+//            .recordFormatter(recordFormatter)
+//            .recordPartitioner((r, _) => Timestamp(r.consumerRecord.timestamp()).toDate)
+//            .fileBuilderFactory(_ => new CsvFileBuilder(Compression.NONE))
+//            .fileCommitStrategy(
+//              MultiFileCommitStrategy.anyFile(
+//                ReachedAnyOf(recordsWritten = Some(cfg.getLong("file.max.records")))
+//              )
+//            )
+//            .build()
+//        )
+//        .batchStorage(
+//          S3FileStorage
+//            .builder()
+//            .s3Client(s3Client)
+//            .bucket(cfg.getString("s3.bucket"))
+//            .filePathFormatter(
+//              new TimePartitioningFilePathFormatter[LocalDate](cfg.getStringOpt("file.time-partition.pattern"), None)
+//            )
+//            .build()
+//        )
+//        .partitionGrouping(groupForPartition)
+//        .build()
+//
+//    val loader = new StreamLoader(source, sink)
+//
+//    sys.addShutdownHook {
+//      loader.stop()
+//      s3Client.close()
+//    }
+//
+//    loader.start()
   }
 }
 

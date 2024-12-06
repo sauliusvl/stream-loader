@@ -10,6 +10,7 @@ package com.adform.streamloader.vertica.v2
 
 import com.adform.streamloader.model.StreamRecord
 import com.adform.streamloader.sink.batch.v2._
+import com.adform.streamloader.sink.batch.v2.formatting.{FormattedRecordBatch, FormattedRecordBatchBuilder}
 import com.adform.streamloader.util.{Logging, TimeProvider}
 
 import java.io.InputStream
