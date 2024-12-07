@@ -8,9 +8,10 @@
 
 package com.adform.streamloader.vertica.file.native
 
+import com.adform.streamloader.vertica.native.NativeVerticaPrimitiveTypeWriter
+
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks

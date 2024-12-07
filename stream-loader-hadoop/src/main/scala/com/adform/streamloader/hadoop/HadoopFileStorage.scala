@@ -9,9 +9,9 @@
 package com.adform.streamloader.hadoop
 
 import com.adform.streamloader.model.StreamRange
-import com.adform.streamloader.sink.batch.v2.formatting.FormattedRecordBatch
-import com.adform.streamloader.sink.batch.v2.storage.TwoPhaseCommitBatchStorage
-import com.adform.streamloader.sink.file.FilePathFormatter
+import com.adform.streamloader.sink.batch.format.FormattedRecordBatch
+import com.adform.streamloader.sink.batch.storage.TwoPhaseCommitBatchStorage
+import com.adform.streamloader.sink.batch.stream.FilePathFormatter
 import org.apache.hadoop.fs.{FileSystem, Path}
 
 import java.io.IOException

@@ -9,9 +9,9 @@
 package com.adform.streamloader.vertica.file.native
 
 import java.io.ByteArrayOutputStream
-
 import com.adform.streamloader.sink.encoding.macros.DataTypeEncodingAnnotation._
 import com.adform.streamloader.model.Timestamp
+import com.adform.streamloader.vertica.native.{NativeVerticaPrimitiveTypeWriter, NativeVerticaRecordEncoder, NativeVerticaTypeEncoder}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 

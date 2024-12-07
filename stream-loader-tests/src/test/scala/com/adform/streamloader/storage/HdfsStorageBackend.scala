@@ -12,7 +12,7 @@ import java.util.UUID
 import com.adform.streamloader.fixtures._
 import com.adform.streamloader.hadoop.HadoopFileStorage
 import com.adform.streamloader.model.{ExampleMessage, StreamPosition}
-import com.adform.streamloader.sink.file.{FilePathFormatter, TimePartitioningFilePathFormatter}
+import com.adform.streamloader.sink.batch.stream.{FilePathFormatter, TimePartitioningFilePathFormatter}
 import com.adform.streamloader.{BuildInfo, Loader}
 import com.sksamuel.avro4s.{RecordFormat, ScalePrecision}
 import org.mandas.docker.client.DockerClient

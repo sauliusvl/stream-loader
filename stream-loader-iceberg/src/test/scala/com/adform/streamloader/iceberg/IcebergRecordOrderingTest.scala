@@ -1,6 +1,5 @@
 package com.adform.streamloader.iceberg
 
-import com.adform.streamloader.iceberg.v2.IcebergRecordOrdering
 import org.apache.iceberg.data.GenericRecord
 import org.apache.iceberg.expressions.{Expressions, UnboundTerm}
 import org.apache.iceberg.types.Types

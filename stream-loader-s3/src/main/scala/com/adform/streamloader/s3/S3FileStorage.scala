@@ -8,9 +8,9 @@
 
 package com.adform.streamloader.s3
 
-import com.adform.streamloader.sink.batch.v2.formatting.FormattedRecordBatch
-import com.adform.streamloader.sink.batch.v2.storage.TwoPhaseCommitBatchStorage
-import com.adform.streamloader.sink.file.FilePathFormatter
+import com.adform.streamloader.sink.batch.format.FormattedRecordBatch
+import com.adform.streamloader.sink.batch.storage.TwoPhaseCommitBatchStorage
+import com.adform.streamloader.sink.batch.stream.FilePathFormatter
 import com.adform.streamloader.util.Logging
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client

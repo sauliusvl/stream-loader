@@ -2,9 +2,9 @@ package com.adform.streamloader.hadoop
 
 import com.adform.streamloader.hadoop.parquet.ParquetConfig
 import com.adform.streamloader.model.StreamRange
-import com.adform.streamloader.sink.batch.v2.{BaseBatchBuilder, RecordBatch}
-import com.adform.streamloader.sink.batch.v2.stream.{BaseStreamBatchBuilder, StreamBatch}
-import com.adform.streamloader.sink.file.Compression.NONE
+import com.adform.streamloader.sink.batch.stream.{BaseStreamBatchBuilder, StreamBatch}
+import com.adform.streamloader.sink.batch.{BaseBatchBuilder, RecordBatch}
+import com.adform.streamloader.sink.batch.Compression.NONE
 import org.apache.hadoop.fs.{FileSystem, Path}
 import com.adform.streamloader.util.UuidExtensions.randomUUIDv7
 import org.apache.avro.Schema

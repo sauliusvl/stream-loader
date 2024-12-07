@@ -10,20 +10,14 @@ package com.adform.streamloader.loaders
 
 import com.adform.streamloader.model.{ExampleMessage, StreamRecord, Timestamp}
 import com.adform.streamloader.sink.Sink
-import com.adform.streamloader.sink.batch.RecordFormatter
-import com.adform.streamloader.sink.batch.v2.formatting.FormattingRecordBatcher
-import com.adform.streamloader.sink.batch.v2.stream.TempFileStreamBatch
-import com.adform.streamloader.sink.batch.v2.{BatchCommitStrategy, RecordBatchingSink}
+import com.adform.streamloader.sink.batch.commit.BatchCommitStrategy
+import com.adform.streamloader.sink.batch.format.{FormattingRecordBatcher, RecordFormatter}
+import com.adform.streamloader.sink.batch.stream.TempFileStreamBatch
+import com.adform.streamloader.sink.batch.{Compression, RecordBatchingSink}
 import com.adform.streamloader.sink.encoding.macros.DataTypeEncodingAnnotation.{DecimalEncoding, MaxLength}
-import com.adform.streamloader.sink.file.Compression
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.vertica._
-import com.adform.streamloader.vertica.v2.{
-  ExternalOffsetVerticaBatchStorage,
-  ExternalOffsetVerticaBatcher,
-  VerticaNativeRowBatchBuilder
-}
 import com.adform.streamloader.{Loader, StreamLoader}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.vertica.jdbc.VerticaConnection

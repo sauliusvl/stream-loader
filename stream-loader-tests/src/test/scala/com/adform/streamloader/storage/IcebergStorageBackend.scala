@@ -9,7 +9,7 @@
 package com.adform.streamloader.storage
 
 import com.adform.streamloader.fixtures.{Container, ContainerWithEndpoint, DockerNetwork, SimpleContainer}
-import com.adform.streamloader.iceberg.v2.IcebergRecordBatchStorage
+import com.adform.streamloader.iceberg.IcebergRecordBatchStorage
 import com.adform.streamloader.model.{ExampleMessage, StreamPosition}
 import com.adform.streamloader.{BuildInfo, Loader}
 import com.sksamuel.avro4s.{ScalePrecision, SchemaFor}

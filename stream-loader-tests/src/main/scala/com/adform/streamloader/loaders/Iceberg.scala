@@ -8,11 +8,11 @@
 
 package com.adform.streamloader.loaders
 
-import com.adform.streamloader.iceberg.v2._
+import com.adform.streamloader.iceberg.{IcebergRecordBatchStorage, IcebergRecordBatcher, IcebergRecordOrdering, IcebergRecordPartitioner}
 import com.adform.streamloader.model.ExampleMessage
-import com.adform.streamloader.sink.batch.RecordFormatter
-import com.adform.streamloader.sink.batch.v2.BatchCommitStrategy._
-import com.adform.streamloader.sink.batch.v2.RecordBatchingSink
+import com.adform.streamloader.sink.batch.RecordBatchingSink
+import com.adform.streamloader.sink.batch.commit.BatchCommitStrategy._
+import com.adform.streamloader.sink.batch.format.RecordFormatter
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.util.UuidExtensions._

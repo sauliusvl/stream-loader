@@ -9,7 +9,8 @@
 package com.adform.streamloader.sink.file
 
 import com.adform.streamloader.model.{StreamPosition, StreamRange, Timestamp}
-import com.adform.streamloader.sink.file.{Compression, TimePartitioningFilePathFormatter}
+import com.adform.streamloader.sink.batch.Compression
+import com.adform.streamloader.sink.batch.stream.TimePartitioningFilePathFormatter
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers

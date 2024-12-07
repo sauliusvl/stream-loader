@@ -8,15 +8,13 @@
 
 package com.adform.streamloader.loaders
 
-import com.adform.streamloader.clickhouse.v2._
+import com.adform.streamloader.clickhouse.{ClickHouseRecordBatchStorage, ClickHouseRowBinaryBatchBuilder}
 import com.adform.streamloader.model.{ExampleMessage, Timestamp}
-import com.adform.streamloader.sink.batch.RecordFormatter
-import com.adform.streamloader.sink.batch.v2.BatchCommitStrategy.ReachedAnyOf
-import com.adform.streamloader.sink.batch.v2._
-import com.adform.streamloader.sink.batch.v2.formatting.FormattingRecordBatcher
-import com.adform.streamloader.sink.batch.v2.stream.TempFileStreamBatch
+import com.adform.streamloader.sink.batch.{Compression, RecordBatchingSink}
+import com.adform.streamloader.sink.batch.commit.BatchCommitStrategy.ReachedAnyOf
+import com.adform.streamloader.sink.batch.format.{FormattingRecordBatcher, RecordFormatter}
+import com.adform.streamloader.sink.batch.stream.TempFileStreamBatch
 import com.adform.streamloader.sink.encoding.macros.DataTypeEncodingAnnotation.DecimalEncoding
-import com.adform.streamloader.sink.file.Compression
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.{Loader, StreamLoader}

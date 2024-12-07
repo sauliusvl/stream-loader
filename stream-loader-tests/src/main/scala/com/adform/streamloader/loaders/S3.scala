@@ -10,12 +10,10 @@ package com.adform.streamloader.loaders
 
 import com.adform.streamloader.model.Timestamp
 import com.adform.streamloader.s3.S3FileStorage
-import com.adform.streamloader.sink.batch.RecordFormatter
-import com.adform.streamloader.sink.batch.v2.BatchCommitStrategy.ReachedAnyOf
-import com.adform.streamloader.sink.batch.v2.RecordBatchingSink
-import com.adform.streamloader.sink.batch.v2.formatting.FormattingRecordBatcher
-import com.adform.streamloader.sink.batch.v2.stream.{CsvStreamBatchBuilder, LocalFileStreamBatch, TempFileStreamBatch}
-import com.adform.streamloader.sink.file._
+import com.adform.streamloader.sink.batch.RecordBatchingSink
+import com.adform.streamloader.sink.batch.commit.BatchCommitStrategy.ReachedAnyOf
+import com.adform.streamloader.sink.batch.format.{FormattingRecordBatcher, RecordFormatter}
+import com.adform.streamloader.sink.batch.stream._
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.{Loader, StreamLoader}

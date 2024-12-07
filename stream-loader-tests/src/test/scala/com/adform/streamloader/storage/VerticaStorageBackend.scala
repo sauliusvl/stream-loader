@@ -12,11 +12,10 @@ import java.util.UUID
 import com.adform.streamloader.fixtures.{Container, ContainerWithEndpoint, DockerNetwork, SimpleContainer}
 import com.adform.streamloader.loaders.{TestExternalOffsetVerticaLoader, TestInRowOffsetVerticaLoader}
 import com.adform.streamloader.model.{ExampleMessage, StreamPosition, Timestamp}
-import com.adform.streamloader.sink.batch.v2.RecordBatch
-import com.adform.streamloader.sink.batch.v2.storage.RecordBatchStorage
+import com.adform.streamloader.sink.batch.RecordBatch
+import com.adform.streamloader.sink.batch.storage.RecordBatchStorage
 import com.adform.streamloader.util.Retry
-import com.adform.streamloader.vertica.InRowOffsetVerticaBatchStorage
-import com.adform.streamloader.vertica.v2.ExternalOffsetVerticaBatchStorage
+import com.adform.streamloader.vertica.{ExternalOffsetVerticaBatchStorage, InRowOffsetVerticaBatchStorage}
 import com.adform.streamloader.{BuildInfo, Loader}
 import org.mandas.docker.client.DockerClient
 import org.mandas.docker.client.messages.{ContainerConfig, HostConfig}

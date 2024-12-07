@@ -10,9 +10,10 @@ package com.adform.streamloader.loaders
 
 import com.adform.streamloader.hadoop.{DerivedAvroParquetFileBuilder, HadoopFileStorage}
 import com.adform.streamloader.model.{ExampleMessage, StreamRecord, Timestamp}
-import com.adform.streamloader.sink.batch.v2.formatting.FormattingRecordBatcher
-import com.adform.streamloader.sink.batch.v2.{BatchCommitStrategy, RecordBatchingSink}
-import com.adform.streamloader.sink.file._
+import com.adform.streamloader.sink.batch.format.FormattingRecordBatcher
+import com.adform.streamloader.sink.batch.RecordBatchingSink
+import com.adform.streamloader.sink.batch.commit.BatchCommitStrategy
+import com.adform.streamloader.sink.batch.stream.TimePartitioningFilePathFormatter
 import com.adform.streamloader.source.KafkaSource
 import com.adform.streamloader.util.ConfigExtensions._
 import com.adform.streamloader.{Loader, StreamLoader}
@@ -64,7 +65,7 @@ object TestParquetHdfsLoader extends Loader {
           .batchBuilder(_ =>
             new DerivedAvroParquetFileBuilder[ExampleMessage](
               HadoopOutputFile.fromPath(
-                new Path(cfg.getString("hdfs.staging-directory"), UUID.randomUUID() + ".parquet"),
+                new Path(cfg.getString("hdfs.staging-directory"), s"${UUID.randomUUID()}.parquet"),
                 hadoopFileSystem.getConf
               )
             )

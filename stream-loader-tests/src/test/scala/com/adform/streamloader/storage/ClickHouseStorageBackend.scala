@@ -8,7 +8,7 @@
 
 package com.adform.streamloader.storage
 
-import com.adform.streamloader.clickhouse.v2.ClickHouseRecordBatchStorage
+import com.adform.streamloader.clickhouse.ClickHouseRecordBatchStorage
 import com.adform.streamloader.fixtures.{Container, ContainerWithEndpoint, DockerNetwork, SimpleContainer}
 import com.adform.streamloader.model.{ExampleMessage, StreamPosition, Timestamp}
 import com.adform.streamloader.source.KafkaContext
